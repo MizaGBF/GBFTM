@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.1")
+        print("GBF Thumbnail Maker v1.2")
         self.assets = []
         self.settings = {}
         self.client = None
@@ -186,8 +186,8 @@ class GBFTM():
     def addTuple(self, A:tuple, B:tuple):
         return (A[0]+B[0], A[1]+B[1])
 
-    def subTuple(self, A:tuple, B:tuple):
-        return (A[0]-B[0], A[1]-B[1])
+    def mulTuple(self, A:tuple, f:float):
+        return (int(A[0]*f), int(A[1]*f))
 
     def dlImage(self, url):
         if url not in self.cache:
@@ -203,7 +203,7 @@ class GBFTM():
                     with open("cache/" + base64.b64encode(url.encode('utf-8')).decode('utf-8'), "wb") as f:
                         f.write(self.cache[url])
                 except Exception as e:
-                    print(e)
+                    print(url, ":", e)
                     pass
                 url_handle.close()
         return self.cache[url]
@@ -428,9 +428,9 @@ class GBFTM():
 
     def check_id(self, id, recur=True):
         try:
-            if len(id.split('_')[0]) != 10: raise Exception("MC?")
-            int(id.split('_')[0])
-            t = int(id[0])
+            if len(id.replace('skin/', '').split('_')[0]) != 10: raise Exception("MC?")
+            int(id.replace('skin/', '').split('_')[0])
+            t = int(id.replace('skin/', '')[0])
         except Exception as e:
             if str(e) == "MC?":
                 t = 0
@@ -512,7 +512,7 @@ class GBFTM():
         urls = [
             [
                 "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/s/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/f/{}.jpg",
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/quest/{}.jpg",
                 "ttp://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/my/{}.png"
             ],
             [
@@ -527,7 +527,7 @@ class GBFTM():
             ],
             [
                 "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/s/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/f/{}.jpg",
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/quest/{}.jpg",
                 "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/my/{}.png"
             ]
         ]
@@ -553,9 +553,9 @@ class GBFTM():
         cur_pos = self.addTuple(cur_pos, offset)
         for c in characters:
             try:
-                if len(c.split('_')[0]) < 10: raise Exception("MC?")
-                int(c.split('_')[0])
-                t = int(c[0])
+                if len(c.replace('skin/', '').split('_')[0]) < 10: raise Exception("MC?")
+                int(c.replace('skin/', '').split('_')[0])
+                t = int(c.replace('skin/', '')[0])
             except Exception as e:
                 if str(e) == "MC?":
                     t = 0
@@ -578,7 +578,7 @@ class GBFTM():
                 buf = Image.open(file_jpgdata)
                 size = buf.size
                 buf.close()
-            size = (int(size[0] * ratio), int(size[1] * ratio))
+            size = self.mulTuple(size, ratio)
             self.dlAndPasteImage(modified, u, cur_pos, resize=size)
             cur_pos = self.addTuple(cur_pos, (size[0], 0))
         if preview:
@@ -807,6 +807,8 @@ class GBFTM():
                     else:
                         characters.append(s)
                     i += 1
+                case '-import':
+                    characters += self.import_gbfpib()
                 case '-add':
                     s = self.check_id(args[i+1])
                     if s is None:
@@ -836,6 +838,63 @@ class GBFTM():
         img = self.make_img_from_element(img, characters, pos, offset, ratio, display, False)
         return i, img
 
+    def auto_party(self, img, args, i):
+        characters = []
+        try:
+            input("Use the GBFPIB bookmark to copy a party data and press Return to continue")
+            export = json.loads(pyperclip.paste())
+            babyl = (len(export['c']) > 5)
+            characters.append(export['pcjs'])
+            if babyl: nchara = 4
+            else: nchara = 5
+            for x in range(0, nchara):
+                if babyl and x == 0: continue
+                if x >= len(export['c']) or export['c'][x] is None: characters.append("3999999999")
+                if export['c'][x] in self.nullchar: 
+                    cid = "{}_{}_0{}".format(export['c'][x], self.get_uncap_id(export['cs'][x]), export['ce'][x])
+                else:
+                    cid = "{}_{}".format(export['c'][x], self.get_uncap_id(export['cs'][x]))
+                characters.append(export['ci'][x])
+            if export['s'][0] is not None:
+                characters.append(export['ss'][0])
+            if export['w'][0] is not None and export['wl'][0] is not None:
+                characters.append(str(export['w'][x]) + "00")
+        except Exception as e:
+            print("An error occured while importing a party:", e)
+            raise Exception("Failed to import party data")
+
+        pos = "topleft"
+        offset = (0, 0)
+        ratio = 1.0
+        while i < len(args):
+            print(args[i])
+            match args[i]:
+                case '-ratio':
+                    ratio = float(args[i+1])
+                    i += 1
+                case '-position':
+                    if args[i+1].lower() not in self.possible_pos: raise Exception("Invalid position parameter")
+                    pos = args[i+1].lower()
+                    i += 1
+                case '-offset':
+                    p = args[i+1].split(',')
+                    offset = self.make_pixel_offset(p[0], p[1])
+                    i += 1
+                case _:
+                    i -= 1
+                    break
+            i += 1
+        img = self.make_img_from_element(img, characters[:4], pos, offset, ratio, "partyicon", False)
+        if not babyl:
+            img = self.make_img_from_element(img, characters[4:6], pos, self.addTuple(offset, self.mulTuple((78*4+20, 0), ratio)), ratio, "partyicon", False)
+            diff = 0
+        else:
+            diff = 2
+        img = self.make_img_from_element(img, characters[6-diff:7-diff], pos, self.addTuple(offset, self.mulTuple((20, 142+20), ratio)), 0.75*ratio, "partyicon", False)
+        img = self.make_img_from_element(img, characters[7-diff:8-diff], pos, self.addTuple(offset, self.mulTuple((20+280*0.75+20, 142+20), ratio)), 0.75*ratio, "partyicon", False)
+        
+        return i, img
+
     def auto(self, args):
         try:
             i = 0
@@ -858,6 +917,8 @@ class GBFTM():
                         i, img = self.auto_text(img, args, i+1)
                     case '-element':
                         i, img = self.auto_element(img, args, i+1)
+                    case '-party':
+                        i, img = self.auto_party(img, args, i+1)
                 i += 1
             img.save("thumbnail.png", "PNG")
             print("Image saved to thumbnail.png")
