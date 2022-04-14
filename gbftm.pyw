@@ -8,10 +8,12 @@ import base64
 import json
 from io import BytesIO
 import re
+import time
+import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.0")
+        print("GBF Thumbnail Maker v1.1")
         self.assets = []
         self.settings = {}
         self.client = None
@@ -51,6 +53,8 @@ class GBFTM():
             re.compile('(20[0-9]{8}_02)\\.'),
             re.compile('([0-9]{10})\\.')
         ]
+        self.possible_pos = ["topleft", "left", "bottomleft", "bottom", "bottomright", "right", "topright", "top", "middle"]
+        self.possible_display = ["squareicon", "partyicon", "fullart"]
 
     def list_assets(self):
         try: self.assets = [f for f in os.listdir("assets") if (os.path.isfile(os.path.join("assets", f)) and (f.endswith('.png') or f.endswith('.jpg')))]
@@ -341,7 +345,6 @@ class GBFTM():
         pos = "middle"
         offset = (0, 0)
         fs = 120
-        possible_pos = ["topleft", "left", "bottomleft", "bottom", "bottomright", "right", "topright", "top", "middle"]
         while True:
             print()
             print("TEXT DRAW MENU")
@@ -388,9 +391,9 @@ class GBFTM():
                 case "5":
                     italic = not italic
                 case "6":
-                    print("Possible positions:", possible_pos)
+                    print("Possible positions:", self.possible_pos)
                     s = input("Please select where to anchor the text:").lower()
-                    if s not in possible_pos:
+                    if s not in self.possible_pos:
                         print("Invalid choice")
                     else:
                         pos = s
@@ -425,8 +428,8 @@ class GBFTM():
 
     def check_id(self, id, recur=True):
         try:
-            if len(id) != 10: raise Exception("MC?")
-            int(id)
+            if len(id.split('_')[0]) != 10: raise Exception("MC?")
+            int(id.split('_')[0])
             t = int(id[0])
         except Exception as e:
             if str(e) == "MC?":
@@ -442,7 +445,7 @@ class GBFTM():
                 else: return None
         if id is None:
             return None
-        if t > 1:
+        if t > 1 and '_' not in id:
             id.append('_' + input("Input uncap/modifier string:"))
         return id
 
@@ -503,7 +506,6 @@ class GBFTM():
             print("Failed to import party data")
             return []
 
-
     def make_img_from_element(self, img, characters = [], pos = "middle", offset = (0, 0), ratio = 1.0, display = "squareicon", preview=False):
         modified = img.copy()
         d = ImageDraw.Draw(modified, 'RGBA')
@@ -552,8 +554,9 @@ class GBFTM():
         for c in characters:
             try:
                 if len(c.split('_')[0]) < 10: raise Exception("MC?")
+                int(c.split('_')[0])
                 t = int(c[0])
-            except:
+            except Exception as e:
                 if str(e) == "MC?":
                     t = 0
                     if len(c.split("_")) != 4:
@@ -591,8 +594,6 @@ class GBFTM():
         offset = (0, 0)
         ratio = 1.0
         display = "squareicon"
-        possible_pos = ["topleft", "left", "bottomleft", "bottom", "bottomright", "right", "topright", "top", "middle"]
-        possible_display = ["squareicon", "partyicon", "fullart"]
         while True:
             print()
             print("ELEMENT DRAW MENU")
@@ -631,9 +632,9 @@ class GBFTM():
                 case "2":
                     characters += self.import_gbfpib()
                 case "3":
-                    print("Possible Display types:", possible_display)
+                    print("Possible Display types:", self.possible_display)
                     s = input("Please select how to display the element:").lower()
-                    if s not in possible_display:
+                    if s not in self.possible_display:
                         print("Invalid choice")
                     else:
                         display = s
@@ -648,9 +649,9 @@ class GBFTM():
                     except:
                         print("Not a float value")
                 case "5":
-                    print("Possible positions:", possible_pos)
+                    print("Possible positions:", self.possible_pos)
                     s = input("Please select where to anchor the text:").lower()
-                    if s not in possible_pos:
+                    if s not in self.possible_pos:
                         print("Invalid choice")
                     else:
                         pos = s
@@ -669,53 +670,57 @@ class GBFTM():
                 case "8":
                     return self.make_img_from_element(img, characters, pos, offset, ratio, display, False)
 
+    def make_background(self, img, query, rtype=None):
+        res = self.search_asset(query)
+        if len(res) == 0:
+            print("No results found")
+            if self.client is not None:
+                print("Searching on Twitter...")
+                b = self.retrieve_raid_image(query)
+                if b is None:
+                    print("No images found")
+                    raise Exception("No valid background found")
+            else:
+                raise Exception("No valid background found")
+        elif len(res) == 1:
+            b = res[0]
+        else:
+            while True:
+                print()
+                print("Select the image you want:")
+                for i, r in enumerate(res):
+                    print("[{}] {}".format(i, r))
+                try: 
+                    s = int(input())
+                    if s < 0: raise Exception()
+                    b = res[s]
+                    break
+                except:
+                    print("Invalid selection")
+        if rtype is None:
+            while True:
+                print()
+                print("Select a resizing type:")
+                print("[0] Fit")
+                print("[1] Fill")
+                s = input()
+                if s == "0":
+                    rtype = "fit"
+                    break
+                elif s == "1":
+                    rtype = "fill"
+                    break
+                else:
+                    print("Invalid choice")
+        self.pasteImage(img, "assets/" + b, (0, 0), (1280, 720), rtype)
+
     def make(self):
         try:
             img = self.make_canvas((1280, 720))
             print()
             s = input("Search a background (Leave blank to skip):")
             if s != "":
-                res = self.search_asset(s)
-                if len(res) == 0:
-                    print("No results found")
-                    if self.client is not None:
-                        print("Searching on Twitter...")
-                        b = self.retrieve_raid_image(s)
-                        if b is None:
-                            print("No images found")
-                            raise Exception("No valid background found")
-                    else:
-                        raise Exception("No valid background found")
-                elif len(res) == 1:
-                    b = res[0]
-                else:
-                    while True:
-                        print()
-                        print("Select the image you want:")
-                        for i, r in enumerate(res):
-                            print("[{}] {}".format(i, r))
-                        try: 
-                            s = int(input())
-                            if s < 0: raise Exception()
-                            b = res[s]
-                            break
-                        except:
-                            print("Invalid selection")
-                while True:
-                    print()
-                    print("Select a resizing type:")
-                    print("[0] Fit")
-                    print("[1] Fill")
-                    s = input()
-                    if s == "0":
-                        x = "fit"
-                        break
-                    elif s == "1":
-                        x = "fill"
-                        break
-                    else:
-                        print("Invalid choice")
-                self.pasteImage(img, "assets/" + b, (0, 0), (1280, 720), x)
+                self.make_background(img, s)
             while True:
                 print()
                 print("Please select the next step:")
@@ -738,6 +743,133 @@ class GBFTM():
         except Exception as e:
             print("An error occured:", e)
 
+    def auto_text(self, img, args, i):
+        text = ""
+        fc = (255, 255, 255)
+        oc = (255, 0, 0)
+        os = 10
+        bold = False
+        italic = False
+        pos = "middle"
+        offset = (0, 0)
+        fs = 120
+        while i < len(args):
+            match args[i]:
+                case '-input':
+                    text = input("Please input the text to draw for:", args[i+1])
+                    i += 1
+                case '-content':
+                    text = args[i+1]
+                    i += 1
+                case '-color':
+                    fc = self.ask_color(args[i+1])
+                    i += 1
+                case '-outcolor':
+                    oc = self.ask_color(args[i+1])
+                    i += 1
+                case '-outsize':
+                    os = int(args[i+1])
+                    i += 1
+                case '-bold':
+                    bold = True
+                case '-italic':
+                    italic = True
+                case '-position':
+                    if args[i+1].lower() not in self.possible_pos: raise Exception("Invalid position parameter")
+                    pos = args[i+1].lower()
+                    i += 1
+                case '-offset':
+                    p = args[i+1].split(',')
+                    offset = self.make_pixel_offset(p[0], p[1])
+                    i += 1
+                case '-fontsize':
+                    fs = int(args[i+1])
+                    i += 1
+                case _:
+                    i -= 1
+                    break
+            i += 1
+        img = self.make_img_from_text(img, text, fc, oc, os, bold, italic, pos, offset, fs, False)
+        return i, img
+
+    def auto_element(self, img, args, i):
+        characters = []
+        pos = "middle"
+        offset = (0, 0)
+        ratio = 1.0
+        display = "squareicon"
+        while i < len(args):
+            match args[i]:
+                case '-input':
+                    s = self.check_id(input("Please input the id of the element to add for:", args[i+1]))
+                    if s is None:
+                        raise Exception("Invalid ID")
+                    else:
+                        characters.append(s)
+                    i += 1
+                case '-add':
+                    s = self.check_id(args[i+1])
+                    if s is None:
+                        raise Exception("Invalid ID")
+                    else:
+                        characters.append(s)
+                    i += 1
+                case '-ratio':
+                    ratio = float(args[i+1])
+                    i += 1
+                case '-position':
+                    if args[i+1].lower() not in self.possible_pos: raise Exception("Invalid position parameter")
+                    pos = args[i+1].lower()
+                    i += 1
+                case '-display':
+                    if args[i+1].lower() not in self.possible_display: raise Exception("Invalid display parameter")
+                    display = args[i+1].lower()
+                    i += 1
+                case '-offset':
+                    p = args[i+1].split(',')
+                    offset = self.make_pixel_offset(p[0], p[1])
+                    i += 1
+                case _:
+                    i -= 1
+                    break
+            i += 1
+        img = self.make_img_from_element(img, characters, pos, offset, ratio, display, False)
+        return i, img
+
+    def auto(self, args):
+        try:
+            i = 0
+            img = self.make_canvas((1280, 720))
+            while i < len(args):
+                match args[i]:
+                    case '-bg':
+                        rtype = None
+                        thumb = args[i+1]
+                        try:
+                            if args[i+2] in ['-fit', '-fill']:
+                                rtype = args[i+2]
+                                i += 2
+                            else:
+                                i += 1
+                        except:
+                            i += 1
+                        self.make_background(img, thumb, rtype[1:])
+                    case '-text':
+                        i, img = self.auto_text(img, args, i+1)
+                    case '-element':
+                        i, img = self.auto_element(img, args, i+1)
+                i += 1
+            img.save("thumbnail.png", "PNG")
+            print("Image saved to thumbnail.png")
+        except Exception as e:
+            print("Error while parsing argument", i, ":", args[i])
+            print("Exception:", e)
+        print("Closing in 5 seconds...")
+        time.sleep(5)
+
 if __name__ == "__main__":
     t = GBFTM()
-    t.cmd()
+    if  len(sys.argv) > 2 and sys.argv[1] == '-auto':
+        t.auto(sys.argv[2:])
+    else:
+        t.cmd()
