@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.3")
+        print("GBF Thumbnail Maker v1.4")
         self.assets = []
         self.settings = {}
         self.client = None
@@ -857,13 +857,17 @@ class GBFTM():
                     print("Invalid choice")
         self.pasteImage(img, "assets/" + b, (0, 0), (1280, 720), rtype)
 
-    def make(self):
+    def make(self, img=None):
         try:
-            img = self.make_canvas((1280, 720))
-            print()
-            s = input("Search a background (Leave blank to skip):")
-            if s != "":
-                self.make_background(img, s)
+            if img is None:
+                init = False
+                img = self.make_canvas((1280, 720))
+                print()
+                s = input("Search a background (Leave blank to skip):")
+                if s != "":
+                    self.make_background(img, s)
+            else:
+                init = True
             while True:
                 print()
                 print("Please select the next step:")
@@ -881,8 +885,11 @@ class GBFTM():
                         img.show()
                     case '3':
                         break
-            img.save("thumbnail.png", "PNG")
-            print("Image saved to thumbnail.png")
+            if not init:
+                img.save("thumbnail.png", "PNG")
+                print("Image saved to thumbnail.png")
+            else:
+                return img
         except Exception as e:
             print("An error occured:", e)
 
@@ -1067,6 +1074,8 @@ class GBFTM():
                         i, img = self.auto_element(img, args, i+1)
                     case '-party':
                         i, img = self.auto_party(img, args, i+1)
+                    case '-manual':
+                        img = self.make(img)
                 i += 1
             img.save("thumbnail.png", "PNG")
             print("Image saved to thumbnail.png")
