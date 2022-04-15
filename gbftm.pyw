@@ -1005,7 +1005,7 @@ class GBFTM():
             if export['s'][0] is not None:
                 characters.append(export['ss'][0])
             if export['w'][0] is not None and export['wl'][0] is not None:
-                characters.append(str(export['w'][x]) + "00")
+                characters.append(str(export['w'][0]) + "00")
         except Exception as e:
             print("An error occured while importing a party:", e)
             raise Exception("Failed to import party data")
