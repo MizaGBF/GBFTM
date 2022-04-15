@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.6")
+        print("GBF Thumbnail Maker v1.7")
         self.assets = []
         self.settings = {}
         self.load()
@@ -314,7 +314,7 @@ class GBFTM():
                     offset = self.addTuple(offset, (int(resize[0]-size[0]*mod)//2, int(resize[1]-size[1]*mod)//2))
                     buffers.append(buffers[-1].resize((int(size[0]*mod), int(size[1]*mod)), Image.LANCZOS))
         size = buffers[-1].size
-        if size[0] == img.size[0] and size[1] == img.size[1]:
+        if size[0] == img.size[0] and size[1] == img.size[1] and offset[0] == 0 and offset[1] == 0:
             img = Image.alpha_composite(img, buffers[-1])
         else:
             layer = self.make_canvas((1280, 720))
@@ -392,7 +392,7 @@ class GBFTM():
                 return None
         return tuple(coor)
 
-    def make_img_from_text(self, img, text = "", fc = (255, 255, 255), oc = (0, 0, 0), os = 2, bold = False, italic = False, pos = "middle", offset = (0, 0), fs = 24, preview=False): # to draw text into an image
+    def make_img_from_text(self, img, text = "", fc = (255, 255, 255), oc = (0, 0, 0), os = 10, bold = False, italic = False, pos = "middle", offset = (0, 0), fs = 24, preview=False): # to draw text into an image
         text = text.replace('\\n', '\n')
         modified = img.copy()
         d = ImageDraw.Draw(modified, 'RGBA')
@@ -400,7 +400,12 @@ class GBFTM():
         if bold: font_file += "b"
         if italic: font_file += "i"
         font = ImageFont.truetype("assets/" + font_file + ".ttf", fs, encoding="unic")
-        size = font.getsize(text, stroke_width=2)
+        nl = text.split('\n')
+        size = [0, 0]
+        for l in nl:
+            s = font.getsize(l, stroke_width=os)
+            size[0] = max(size[0], s[0])
+            size[1] += s[1]
         match pos.lower():
             case "topleft":
                 text_pos = (0, 0)
@@ -805,7 +810,7 @@ class GBFTM():
         res = self.search_asset(query)
         if len(res) == 0:
             print("No results found")
-            if self.client is not None and self.test_twitter(silent=True):
+            if self.client is not None or self.test_twitter(silent=True):
                 print("Searching on Twitter...")
                 b = self.retrieve_raid_image(query)
                 if b is None:
@@ -894,8 +899,7 @@ class GBFTM():
         while i < len(args):
             match args[i]:
                 case '-input':
-                    text = input("Please input the text to draw for:", args[i+1])
-                    i += 1
+                    text = input("Please input the text to draw:")
                 case '-content':
                     text = args[i+1]
                     i += 1
@@ -918,7 +922,7 @@ class GBFTM():
                     i += 1
                 case '-offset':
                     p = args[i+1].split(',')
-                    offset = self.make_pixel_offset(p[0], p[1])
+                    offset = self.make_pixel_offset(p)
                     i += 1
                 case '-fontsize':
                     fs = int(args[i+1])
@@ -939,7 +943,7 @@ class GBFTM():
         while i < len(args):
             match args[i]:
                 case '-input':
-                    s = self.check_id(input("Please input the id of the element to add for:", args[i+1]))
+                    s = self.check_id(input("Please input the id of the element to add:"))
                     if s is None:
                         raise Exception("Invalid ID")
                     else:
@@ -972,7 +976,7 @@ class GBFTM():
                     i += 1
                 case '-offset':
                     p = args[i+1].split(',')
-                    offset = self.make_pixel_offset(p[0], p[1])
+                    offset = self.make_pixel_offset(p)
                     i += 1
                 case _:
                     i -= 1
@@ -1010,7 +1014,6 @@ class GBFTM():
         offset = (0, 0)
         ratio = 1.0
         while i < len(args):
-            print(args[i])
             match args[i]:
                 case '-ratio':
                     ratio = float(args[i+1])
@@ -1021,7 +1024,7 @@ class GBFTM():
                     i += 1
                 case '-offset':
                     p = args[i+1].split(',')
-                    offset = self.make_pixel_offset(p[0], p[1])
+                    offset = self.make_pixel_offset(p)
                     i += 1
                 case _:
                     i -= 1
@@ -1029,12 +1032,12 @@ class GBFTM():
             i += 1
         img = self.make_img_from_element(img, characters[:4], pos, offset, ratio, "partyicon", False)
         if not babyl:
-            img = self.make_img_from_element(img, characters[4:6], pos, self.addTuple(offset, self.mulTuple((78*4+20, 0), ratio)), ratio, "partyicon", False)
+            img = self.make_img_from_element(img, characters[4:6], pos, self.addTuple(offset, self.mulTuple((78*4+15, 0), ratio)), ratio, "partyicon", False)
             diff = 0
         else:
             diff = 2
-        img = self.make_img_from_element(img, characters[6-diff:7-diff], pos, self.addTuple(offset, self.mulTuple((20, 142+20), ratio)), 0.75*ratio, "partyicon", False)
-        img = self.make_img_from_element(img, characters[7-diff:8-diff], pos, self.addTuple(offset, self.mulTuple((20+280*0.75+20, 142+20), ratio)), 0.75*ratio, "partyicon", False)
+        img = self.make_img_from_element(img, characters[6-diff:7-diff], pos, self.addTuple(offset, self.mulTuple((15, 142+10), ratio)), 0.75*ratio, "partyicon", False)
+        img = self.make_img_from_element(img, characters[7-diff:8-diff], pos, self.addTuple(offset, self.mulTuple((15+280*0.75+15, 142+10), ratio)), 0.75*ratio, "partyicon", False)
         
         return i, img
 
@@ -1047,6 +1050,11 @@ class GBFTM():
                     case '-bg':
                         rtype = '-fit'
                         thumb = args[i+1]
+                        if thumb == "-input":
+                            thumb = input("Search a background (Leave blank to skip):")
+                            if thumb == "":
+                                i += 2
+                                continue
                         try:
                             if args[i+2] in ['-fit', '-fill']:
                                 rtype = args[i+2]
@@ -1068,6 +1076,8 @@ class GBFTM():
                         img = self.pasteImage(img, "assets/fade_in.png", (0,40), resize=(1280,640), resizeType="default")
                     case '-nm150':
                         img = self.pasteImage(img, "assets/nm150_filter.png", (0,40), resize=(1280,640), resizeType="default")
+                    case _:
+                        print("Warning: Ignoring unknown parameter:", args[i])
                 i += 1
             img.save("thumbnail.png", "PNG")
             print("Image saved to thumbnail.png")
