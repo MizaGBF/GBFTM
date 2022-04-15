@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.7")
+        print("GBF Thumbnail Maker v1.8")
         self.assets = []
         self.settings = {}
         self.load()
