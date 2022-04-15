@@ -1,1 +1,1 @@
-python gbftm.pyw -auto -bg -input -fadein -element -input -display fullart -position topright -offset -235,40 -ratio 0,68085106382978723404255319148936 -text -input -position bottomleft -offset 30,-30 -fontsize 100
+python gbftm.pyw -auto -bg -input -fadein -element -input -display fullart -position topright -offset -235,40 -ratio 0,68085106382978723404255319148936 -text -input -position bottomleft -offset 30,-30 -fontsize 100 -bold
