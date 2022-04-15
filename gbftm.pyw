@@ -50,8 +50,8 @@ class GBFTM():
         }
         self.nullchar = [3030182000, 3020072000]
         self.regex = [
-            re.compile('(30[0-9]{8}_01)\\.'),
-            re.compile('(20[0-9]{8}_02)\\.'),
+            re.compile('(30[0-9]{8})_01\\.'),
+            re.compile('(20[0-9]{8})_02\\.'),
             re.compile('(20[0-9]{8})\\.'),
             re.compile('(10[0-9]{8})\\.')
         ]
@@ -59,31 +59,41 @@ class GBFTM():
             [
                 "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/s/{}.jpg",
                 "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/quest/{}.jpg",
-                "ttp://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/my/{}.png"
+                "ttp://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/my/{}.png",
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/job_change/{}.png",
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/job_change/{}.png"
             ],
             [
                 "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/s/{}.jpg",
                 "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/m/{}.jpg",
+                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/b/{}.png",
+                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/b/{}.png",
                 "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/b/{}.png"
             ],
             [
                 "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/summon/s/{}.jpg",
                 "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/summon/m/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/summon/my/{}.png"
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/summon/my/{}.png",
+                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/summon/b/{}.png",
+                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/summon/b/{}.png"
             ],
             [
                 "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/s/{}.jpg",
                 "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/quest/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/my/{}.png"
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/my/{}.png",
+                "http://game-a.granbluefantasy.jp/assets_en/img_low/sp/assets/npc/b/{}.png",
+                "https://media.skycompass.io/assets/customizes/characters/1138x1138/{}.png"
             ],
             [
+                "assets/{}",
+                "assets/{}",
                 "assets/{}",
                 "assets/{}",
                 "assets/{}"
             ]
         ]
         self.possible_pos = ["topleft", "left", "bottomleft", "bottom", "bottomright", "right", "topright", "top", "middle"]
-        self.possible_display = ["squareicon", "partyicon", "fullart"]
+        self.possible_display = ["squareicon", "partyicon", "fullart", "homeart", "skycompass"]
 
     def list_assets(self): # list all .png or .jpg files in the /assets folder
         try: self.assets = [f for f in os.listdir("assets") if (os.path.isfile(os.path.join("assets", f)) and (f.endswith('.png') or f.endswith('.jpg')))]
@@ -366,7 +376,6 @@ class GBFTM():
             url_handle.close()
             for r in self.regex:
                 group = r.findall(data)
-                print(group)
                 if len(group) > 0:
                     return group[0]
             return None
@@ -546,7 +555,7 @@ class GBFTM():
         if id is None:
             return None
         if t > 1 and '_' not in id:
-            id.append('_' + input("Input uncap/modifier string:"))
+            id += '_' + input("Input uncap/modifier string:")
         return id
 
     def get_uncap_id(self, cs): # to get character portraits based on uncap levels
@@ -635,6 +644,10 @@ class GBFTM():
                     u = self.asset_urls[t][1].format(c)
                 case "fullart":
                     u = self.asset_urls[t][2].format(c)
+                case "homeart":
+                    u = self.asset_urls[t][3].format(c)
+                case "skycompass":
+                    u = self.asset_urls[t][4].format(c)
             if u.startswith("http"):
                 with BytesIO(self.dlImage(u)) as file_jpgdata:
                     buf = Image.open(file_jpgdata)
@@ -948,7 +961,6 @@ class GBFTM():
                         raise Exception("Invalid ID")
                     else:
                         characters.append(s)
-                    i += 1
                 case '-import':
                     characters += self.import_gbfpib()
                 case '-add':
@@ -959,7 +971,7 @@ class GBFTM():
                         characters.append(s)
                     i += 1
                 case '-ratio':
-                    ratio = float(args[i+1])
+                    ratio = float(args[i+1].replace(',', '.'))
                     i += 1
                 case '-ratiofit':
                     if len(characters) == 0: raise Exception("No elements set")
@@ -1016,7 +1028,7 @@ class GBFTM():
         while i < len(args):
             match args[i]:
                 case '-ratio':
-                    ratio = float(args[i+1])
+                    ratio = float(args[i+1].replace(',', '.'))
                     i += 1
                 case '-position':
                     if args[i+1].lower() not in self.possible_pos: raise Exception("Invalid position parameter")
