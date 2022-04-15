@@ -4,7 +4,7 @@
 * Tested on Python 3.10.  
 * [pyperclip](https://pypi.org/project/pyperclip/) to read/write the clipboard.  
 * [Pillow](https://pillow.readthedocs.io/en/stable/) for image processing.  
-* [Tweepy](hhttps://github.com/tweepy/tweepy) to retrieve raid images from Twitter.  
+* [Tweepy](https://github.com/tweepy/tweepy) to retrieve raid images from Twitter.  
 * `pip install -r requirements.txt` to install all the modules.  
 ### Notes  
 * Still in development.  
