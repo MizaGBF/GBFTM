@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.2")
+        print("GBF Thumbnail Maker v1.3")
         self.assets = []
         self.settings = {}
         self.client = None
@@ -52,6 +52,33 @@ class GBFTM():
         self.regex = [
             re.compile('(20[0-9]{8}_02)\\.'),
             re.compile('([0-9]{10})\\.')
+        ]
+        self.asset_urls = [
+            [
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/s/{}.jpg",
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/quest/{}.jpg",
+                "ttp://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/my/{}.png"
+            ],
+            [
+                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/s/{}.jpg",
+                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/m/{}.jpg",
+                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/b/{}.png"
+            ],
+            [
+                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/summon/s/{}.jpg",
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/summon/m/{}.jpg",
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/summon/my/{}.png"
+            ],
+            [
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/s/{}.jpg",
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/quest/{}.jpg",
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/my/{}.png"
+            ],
+            [
+                "assets/{}",
+                "assets/{}",
+                "assets/{}"
+            ]
         ]
         self.possible_pos = ["topleft", "left", "bottomleft", "bottom", "bottomright", "right", "topright", "top", "middle"]
         self.possible_display = ["squareicon", "partyicon", "fullart"]
@@ -149,18 +176,68 @@ class GBFTM():
                 case _:
                     break
 
+    def add_asset(self):
+        while True:
+            print()
+            print("ASSET MENU")
+            print("[0] Download Item")
+            print("[1] Download Pride of Ascendant")
+            print("[2] Download from URL")
+            print("[Any] Back")
+            s = input()
+            match s:
+                case "0":
+                    try:
+                        s = int(input("Input the item ID:"))
+                        if s < 0: raise Exception()
+                        u = "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/item/article/m/{}.jpg".format(s)
+                    except:
+                        print("Invalid ID")
+                        continue
+                case "1":
+                    try:
+                        s = int(input("Input the pride ID:"))
+                        if s < 1: raise Exception()
+                        while True:
+                            print("[0] Proud")
+                            print("[1] Proud+")
+                            p = input()
+                            if p in ["0", "1"]: break
+                        u = "http://game-a1.granbluefantasy.jp/assets_en/img/sp/quest/assets/free/conquest_{}_proud{}.png".format(str(s).zfill(3), ("plus" if p == "1" else ""))
+                    except:
+                        print("Invalid ID")
+                        continue
+                case "2":
+                    u = int(input("Input the URL:"))
+                    if not u.startswith("http") and not u.endswith(".png") and not u.endswith(".jpg"):
+                        print("Invalid URL")
+                        continue
+                case _:
+                    break
+            try:
+                img = self.request(u)
+                self.checkAssetFolder()
+                s = input("Please input a name for this asset:")
+                with open("assets/" + s + "." + u.split(".")[-1], "wb") as f:
+                    f.write(img)
+            except:
+                print("Asset not found or can't be saved")
+
     def cmd(self):
         while True:
             print()
             print("MAIN MENU")
             print("[0] Make Image")
-            print("[1] Settings")
+            print("[1] Add Asset")
+            print("[2] Settings")
             print("[Any] Quit")
             s = input()
             match s:
                 case "0":
                     self.make()
                 case "1":
+                    self.add_asset()
+                case "2":
                     self.edit_settings()
                 case _:
                     break
@@ -300,6 +377,7 @@ class GBFTM():
         return tuple(coor)
 
     def make_img_from_text(self, img, text = "", fc = (255, 255, 255), oc = (0, 0, 0), os = 2, bold = False, italic = False, pos = "middle", offset = (0, 0), fs = 24, preview=False):
+        text = text.replace('\\n', '\n')
         modified = img.copy()
         d = ImageDraw.Draw(modified, 'RGBA')
         font_file = "font"
@@ -427,6 +505,7 @@ class GBFTM():
         return "{}_{}_{}".format(job, self.classes[jid], '_'.join(skin.split('_')[2:]))
 
     def check_id(self, id, recur=True):
+        if id is None or not isinstance(id, str): return None
         try:
             if len(id.replace('skin/', '').split('_')[0]) != 10: raise Exception("MC?")
             int(id.replace('skin/', '').split('_')[0])
@@ -506,31 +585,53 @@ class GBFTM():
             print("Failed to import party data")
             return []
 
+    def calc_ratio(self, c, display):
+        try:
+            try:
+                if len(c.replace('skin/', '').split('_')[0]) < 10: raise Exception("MC?")
+                int(c.replace('skin/', '').split('_')[0])
+                t = int(c.replace('skin/', '')[0])
+            except Exception as e:
+                if str(e) == "MC?":
+                    t = 0
+                    if len(c.split("_")) != 4:
+                        try:
+                            c = self.get_mc_job_look(None, c)
+                        except:
+                            if c in self.assets:
+                                t = 4
+                            else:
+                                return None
+                else:
+                    if c in self.assets:
+                        t = 4
+                    else:
+                        return None
+            match display.lower():
+                case "squareicon":
+                    u = self.asset_urls[t][0].format(c)
+                case "partyicon":
+                    u = self.asset_urls[t][1].format(c)
+                case "fullart":
+                    u = self.asset_urls[t][2].format(c)
+            if u.startswith("http"):
+                with BytesIO(self.dlImage(u)) as file_jpgdata:
+                    buf = Image.open(file_jpgdata)
+                    size = buf.size
+                    buf.close()
+            else:
+                buf = Image.open(u)
+                size = buf.size
+                buf.close()
+            return min(1280/size[0], 720/size[1])
+        except Exception as xe:
+            print(xe)
+            print("An error occured")
+            return None
+
     def make_img_from_element(self, img, characters = [], pos = "middle", offset = (0, 0), ratio = 1.0, display = "squareicon", preview=False):
         modified = img.copy()
         d = ImageDraw.Draw(modified, 'RGBA')
-        urls = [
-            [
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/s/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/quest/{}.jpg",
-                "ttp://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/my/{}.png"
-            ],
-            [
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/s/{}.jpg",
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/m/{}.jpg",
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/b/{}.png"
-            ],
-            [
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/summon/s/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/summon/m/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/summon/my/{}.png"
-            ],
-            [
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/s/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/quest/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/my/{}.png"
-            ]
-        ]
         match pos.lower():
             case "topleft":
                 cur_pos = (0, 0)
@@ -563,23 +664,36 @@ class GBFTM():
                         try:
                             c = self.get_mc_job_look(None, c)
                         except:
-                            continue
+                            if c in self.assets:
+                                t = 4
+                            else:
+                                continue
                 else:
-                    continue
+                    if c in self.assets:
+                        t = 4
+                    else:
+                        continue
             match display.lower():
                 case "squareicon":
-                    u = urls[t][0].format(c)
+                    u = self.asset_urls[t][0].format(c)
                 case "partyicon":
-                    u = urls[t][1].format(c)
+                    u = self.asset_urls[t][1].format(c)
                 case "fullart":
-                    u = urls[t][2].format(c)
-            data = self.dlImage(u)
-            with BytesIO(self.dlImage(u)) as file_jpgdata:
-                buf = Image.open(file_jpgdata)
+                    u = self.asset_urls[t][2].format(c)
+            if u.startswith("http"):
+                with BytesIO(self.dlImage(u)) as file_jpgdata:
+                    buf = Image.open(file_jpgdata)
+                    size = buf.size
+                    buf.close()
+            else:
+                buf = Image.open(u)
                 size = buf.size
                 buf.close()
             size = self.mulTuple(size, ratio)
-            self.dlAndPasteImage(modified, u, cur_pos, resize=size)
+            if u.startswith("http"):
+                self.dlAndPasteImage(modified, u, cur_pos, resize=size)
+            else:
+                self.pasteImage(modified, u, cur_pos, resize=size)
             cur_pos = self.addTuple(cur_pos, (size[0], 0))
         if preview:
             modified.show()
@@ -603,18 +717,39 @@ class GBFTM():
             print("[2] Import Party")
             print("[3] Set Display type (Current:" + display + ")")
             print("[4] Set Display Ratio (Current:" + str(ratio) + ")")
-            print("[5] Set Position (Current:" + str(pos) + ")")
-            print("[6] Set Offset (Current:" + str(offset) + ")")
-            print("[7] Preview")
-            print("[8] Confirm")
+            print("[5] Set Display Ratio to fit first Element")
+            print("[6] Set Position (Current:" + str(pos) + ")")
+            print("[7] Set Offset (Current:" + str(offset) + ")")
+            print("[8] Preview")
+            print("[9] Confirm")
             s = input()
             match s:
                 case "0":
-                    s = self.check_id(input("Please input the ID of the element to add:"))
-                    if s is None:
-                        print("Invalid ID")
+                    s = input("Please input the ID of the element to add:")
+                    x = self.check_id(s)
+                    if x is None:
+                        res = self.search_asset(s)
+                        if len(res) == 0:
+                            print("Invalid ID")
+                        elif len(res) == 1:
+                            characters.append(res[0])
+                            print(res[0], "added")
+                        else:
+                            while True:
+                                print()
+                                print("Select the image you want:")
+                                for i, r in enumerate(res):
+                                    print("[{}] {}".format(i, r))
+                                try: 
+                                    s = int(input())
+                                    if s < 0: raise Exception()
+                                    characters.append(res[s])
+                                    print(res[s], "added")
+                                    break
+                                except:
+                                    print("Invalid selection")
                     else:
-                        characters.append(s)
+                        characters.append(x)
                         print(s, "added")
                 case "1":
                     print("Current Element(s):", characters)
@@ -649,6 +784,14 @@ class GBFTM():
                     except:
                         print("Not a float value")
                 case "5":
+                    if len(characters) == 0:
+                        print("An element must be set to use this function")
+                    else:
+                        s = self.calc_ratio(characters[0], display)
+                        if s is not None:
+                            ratio = s
+                            print("Display ratio set to", ratio)
+                case "6":
                     print("Possible positions:", self.possible_pos)
                     s = input("Please select where to anchor the text:").lower()
                     if s not in self.possible_pos:
@@ -656,7 +799,7 @@ class GBFTM():
                     else:
                         pos = s
                         print("Position anchor set to", s)
-                case "6":
+                case "7":
                     x = input("Please input the horizontal offset X in pixel:")
                     y = input("Please input the vertical offset Y in pixel:")
                     t = self.make_pixel_offset([x, y])
@@ -665,9 +808,9 @@ class GBFTM():
                     else:
                         offset = t
                         print("Position offset set to", t)
-                case "7":
-                    self.make_img_from_element(img, characters, pos, offset, ratio, display, True)
                 case "8":
+                    self.make_img_from_element(img, characters, pos, offset, ratio, display, True)
+                case "9":
                     return self.make_img_from_element(img, characters, pos, offset, ratio, display, False)
 
     def make_background(self, img, query, rtype=None):
@@ -819,6 +962,11 @@ class GBFTM():
                 case '-ratio':
                     ratio = float(args[i+1])
                     i += 1
+                case '-ratiofit':
+                    if len(characters) == 0: raise Exception("No elements set")
+                    s = self.calc_ratio(characters[0], display)
+                    if s is None: raise Exception("Couldn't calculate ratio")
+                    ratio = s
                 case '-position':
                     if args[i+1].lower() not in self.possible_pos: raise Exception("Invalid position parameter")
                     pos = args[i+1].lower()
