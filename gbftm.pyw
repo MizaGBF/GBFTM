@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.4")
+        print("GBF Thumbnail Maker v1.5")
         self.assets = []
         self.settings = {}
         self.client = None
@@ -50,8 +50,10 @@ class GBFTM():
         }
         self.nullchar = [3030182000, 3020072000]
         self.regex = [
+            re.compile('(30[0-9]{8}_01)\\.'),
             re.compile('(20[0-9]{8}_02)\\.'),
-            re.compile('([0-9]{10})\\.')
+            re.compile('(20[0-9]{8})\\.'),
+            re.compile('(10[0-9]{8})\\.')
         ]
         self.asset_urls = [
             [
@@ -83,12 +85,12 @@ class GBFTM():
         self.possible_pos = ["topleft", "left", "bottomleft", "bottom", "bottomright", "right", "topright", "top", "middle"]
         self.possible_display = ["squareicon", "partyicon", "fullart"]
 
-    def list_assets(self):
+    def list_assets(self): # list all .png or .jpg files in the /assets folder
         try: self.assets = [f for f in os.listdir("assets") if (os.path.isfile(os.path.join("assets", f)) and (f.endswith('.png') or f.endswith('.jpg')))]
         except: self.assets = []
         print(len(self.assets), "asset(s) found")
 
-    def test_twitter(self, silent=False):
+    def test_twitter(self, silent=False): #  test if twitter is available
         try:
             self.client = tweepy.Client(bearer_token = self.settings.get('twitter', ''))
             if not silent: print("Twitter connected")
@@ -118,7 +120,7 @@ class GBFTM():
         except:
             pass
 
-    def request(self, url):
+    def request(self, url): # do a HTTP request and return the result
         try:
             req = request.Request(url)
             url_handle = request.urlopen(req)
@@ -136,7 +138,7 @@ class GBFTM():
         if not os.path.isdir('assets'):
             os.mkdir('assets')
 
-    def retrieve_raid_image(self, search):
+    def retrieve_raid_image(self, search): # retrieve and save a raid image from its tweetdeck code
         try:
             if self.client is None:
                 print("Twitter Bearer token not set")
@@ -159,7 +161,7 @@ class GBFTM():
             print("An error occured")
         return None
 
-    def edit_settings(self):
+    def edit_settings(self): # edit setting menu
         while True:
             print()
             print("SETTINGS MENU")
@@ -176,7 +178,7 @@ class GBFTM():
                 case _:
                     break
 
-    def add_asset(self):
+    def add_asset(self): # to download and save files into the assets folder
         while True:
             print()
             print("ASSET MENU")
@@ -220,10 +222,11 @@ class GBFTM():
                 s = input("Please input a name for this asset:")
                 with open("assets/" + s + "." + u.split(".")[-1], "wb") as f:
                     f.write(img)
+                self.assets.append(s + "." + u.split(".")[-1])
             except:
                 print("Asset not found or can't be saved")
 
-    def cmd(self):
+    def cmd(self): # main command line menu
         while True:
             print()
             print("MAIN MENU")
@@ -242,31 +245,31 @@ class GBFTM():
                 case _:
                     break
 
-    def search_asset(self, query):
-        qs = query.split(' ')
+    def search_asset(self, query): # search a file in the assets folder
+        qs = query.lower().split(' ')
         res = []
         for a in self.assets:
             for q in qs:
-                if q not in a:
+                if q not in a.lower():
                     break
                 if q is qs[-1]:
                     res.append(a)
         return res
 
-    def make_canvas(self, size):
+    def make_canvas(self, size): # make a blank image to the specified size
         i = Image.new('RGB', size, "black")
         im_a = Image.new("L", i.size, "black")
         i.putalpha(im_a)
         im_a.close()
         return i
 
-    def addTuple(self, A:tuple, B:tuple):
+    def addTuple(self, A:tuple, B:tuple): # to add pairs together
         return (A[0]+B[0], A[1]+B[1])
 
-    def mulTuple(self, A:tuple, f:float):
+    def mulTuple(self, A:tuple, f:float): # multiply a pair by a value
         return (int(A[0]*f), int(A[1]*f))
 
-    def dlImage(self, url):
+    def dlImage(self, url): # download an image (check the cache first)
         if url not in self.cache:
             self.checkDiskCache()
             try: # get from disk cache if enabled
@@ -285,7 +288,7 @@ class GBFTM():
                 url_handle.close()
         return self.cache[url]
 
-    def dlAndPasteImage(self, img, url, offset, resize=None, resizeType="default"): # dl an image and call pasteImage()
+    def dlAndPasteImage(self, img, url, offset, resize=None, resizeType="default"): # call dlImage() and pasteImage()
         with BytesIO(self.dlImage(url)) as file_jpgdata:
             self.pasteImage(img, file_jpgdata, offset, resize, resizeType)
 
@@ -349,15 +352,16 @@ class GBFTM():
             url_handle = request.urlopen(req)
             data = url_handle.read().decode('utf-8')
             url_handle.close()
-            group = self.regex[0].findall(data)
-            if len(group) > 0:
-                return group[0]
-            group = self.regex[1].findall(data)
-            return group[0]
+            for r in self.regex:
+                group = r.findall(data)
+                print(group)
+                if len(group) > 0:
+                    return group[0]
+            return None
         except:
             return None
 
-    def ask_color(self, s):
+    def ask_color(self, s): # take a color sring and output a tuple
         s = s.replace(' ', '').replace('(', '').replace(')', '').split(',')
         if len(s) < 3 or len(s) > 4: return None
         for i, v in enumerate(s):
@@ -368,7 +372,7 @@ class GBFTM():
                 return None
         return tuple(s)
 
-    def make_pixel_offset(self, coor):
+    def make_pixel_offset(self, coor): # take an array of two string value and output a pair
         for i, v in enumerate(coor):
             try:
                 coor[i] = int(v)
@@ -376,7 +380,7 @@ class GBFTM():
                 return None
         return tuple(coor)
 
-    def make_img_from_text(self, img, text = "", fc = (255, 255, 255), oc = (0, 0, 0), os = 2, bold = False, italic = False, pos = "middle", offset = (0, 0), fs = 24, preview=False):
+    def make_img_from_text(self, img, text = "", fc = (255, 255, 255), oc = (0, 0, 0), os = 2, bold = False, italic = False, pos = "middle", offset = (0, 0), fs = 24, preview=False): # to draw text into an image
         text = text.replace('\\n', '\n')
         modified = img.copy()
         d = ImageDraw.Draw(modified, 'RGBA')
@@ -413,7 +417,7 @@ class GBFTM():
             img.close()
         return modified
 
-    def make_add_text(self, img):
+    def make_add_text(self, img): # menu to add a text element
         text = ""
         fc = (255, 255, 255)
         oc = (255, 0, 0)
@@ -504,7 +508,7 @@ class GBFTM():
         if jid not in self.classes: return skin
         return "{}_{}_{}".format(job, self.classes[jid], '_'.join(skin.split('_')[2:]))
 
-    def check_id(self, id, recur=True):
+    def check_id(self, id, recur=True): # check an element id and return it if valid (None if error)
         if id is None or not isinstance(id, str): return None
         try:
             if len(id.replace('skin/', '').split('_')[0]) != 10: raise Exception("MC?")
@@ -517,10 +521,10 @@ class GBFTM():
                     try:
                         id = self.get_mc_job_look(None, id)
                     except:
-                        if recur: return self.check_id(self.search_id_on_wiki(id), recur=False)
+                        if recur: return self.check_id(self.search_id_on_wiki(id), recur=False) # wiki check
                         else: return None
             else:
-                if recur: return self.check_id(self.search_id_on_wiki(id), recur=False)
+                if recur: return self.check_id(self.search_id_on_wiki(id), recur=False) # wiki check
                 else: return None
         if id is None:
             return None
@@ -531,7 +535,7 @@ class GBFTM():
     def get_uncap_id(self, cs): # to get character portraits based on uncap levels
         return {2:'02', 3:'02', 4:'02', 5:'03', 6:'04'}.get(cs, '01')
 
-    def import_gbfpib(self):
+    def import_gbfpib(self): # import data from GBFPIB
         options = []
         try:
             input("Use the GBFPIB bookmark to copy a party data and press Return to continue")
@@ -585,7 +589,7 @@ class GBFTM():
             print("Failed to import party data")
             return []
 
-    def calc_ratio(self, c, display):
+    def get_element_size(self, c, display): # retrive an element asset and return its size
         try:
             try:
                 if len(c.replace('skin/', '').split('_')[0]) < 10: raise Exception("MC?")
@@ -601,12 +605,12 @@ class GBFTM():
                             if c in self.assets:
                                 t = 4
                             else:
-                                return None
+                                return None, None
                 else:
                     if c in self.assets:
                         t = 4
                     else:
-                        return None
+                        return None, None
             match display.lower():
                 case "squareicon":
                     u = self.asset_urls[t][0].format(c)
@@ -623,13 +627,19 @@ class GBFTM():
                 buf = Image.open(u)
                 size = buf.size
                 buf.close()
+            return size, u
+        except:
+            return None, None
+
+    def calc_ratio(self, c, display): # calculate the ratio needed to fit an element into an image
+        try:
+            size, u = self.get_element_size(c, display)
             return min(1280/size[0], 720/size[1])
-        except Exception as xe:
-            print(xe)
+        except:
             print("An error occured")
             return None
 
-    def make_img_from_element(self, img, characters = [], pos = "middle", offset = (0, 0), ratio = 1.0, display = "squareicon", preview=False):
+    def make_img_from_element(self, img, characters = [], pos = "middle", offset = (0, 0), ratio = 1.0, display = "squareicon", preview=False): # draw elements onto an image
         modified = img.copy()
         d = ImageDraw.Draw(modified, 'RGBA')
         match pos.lower():
@@ -653,42 +663,8 @@ class GBFTM():
                 cur_pos = (640, 360)
         cur_pos = self.addTuple(cur_pos, offset)
         for c in characters:
-            try:
-                if len(c.replace('skin/', '').split('_')[0]) < 10: raise Exception("MC?")
-                int(c.replace('skin/', '').split('_')[0])
-                t = int(c.replace('skin/', '')[0])
-            except Exception as e:
-                if str(e) == "MC?":
-                    t = 0
-                    if len(c.split("_")) != 4:
-                        try:
-                            c = self.get_mc_job_look(None, c)
-                        except:
-                            if c in self.assets:
-                                t = 4
-                            else:
-                                continue
-                else:
-                    if c in self.assets:
-                        t = 4
-                    else:
-                        continue
-            match display.lower():
-                case "squareicon":
-                    u = self.asset_urls[t][0].format(c)
-                case "partyicon":
-                    u = self.asset_urls[t][1].format(c)
-                case "fullart":
-                    u = self.asset_urls[t][2].format(c)
-            if u.startswith("http"):
-                with BytesIO(self.dlImage(u)) as file_jpgdata:
-                    buf = Image.open(file_jpgdata)
-                    size = buf.size
-                    buf.close()
-            else:
-                buf = Image.open(u)
-                size = buf.size
-                buf.close()
+            size, u = self.get_element_size(c, display)
+            if size is None: continue
             size = self.mulTuple(size, ratio)
             if u.startswith("http"):
                 self.dlAndPasteImage(modified, u, cur_pos, resize=size)
@@ -702,7 +678,7 @@ class GBFTM():
             img.close()
         return modified
 
-    def make_add_element(self, img):
+    def make_add_element(self, img): # menu to add elements
         characters = []
         pos = "middle"
         offset = (0, 0)
@@ -813,7 +789,7 @@ class GBFTM():
                 case "9":
                     return self.make_img_from_element(img, characters, pos, offset, ratio, display, False)
 
-    def make_background(self, img, query, rtype=None):
+    def make_background(self, img, query, rtype=None): # menu to add a background
         res = self.search_asset(query)
         if len(res) == 0:
             print("No results found")
@@ -857,7 +833,7 @@ class GBFTM():
                     print("Invalid choice")
         self.pasteImage(img, "assets/" + b, (0, 0), (1280, 720), rtype)
 
-    def make(self, img=None):
+    def make(self, img=None): # main sub menu
         try:
             if img is None:
                 init = False
@@ -893,7 +869,7 @@ class GBFTM():
         except Exception as e:
             print("An error occured:", e)
 
-    def auto_text(self, img, args, i):
+    def auto_text(self, img, args, i): # auto text parsing
         text = ""
         fc = (255, 255, 255)
         oc = (255, 0, 0)
@@ -942,7 +918,7 @@ class GBFTM():
         img = self.make_img_from_text(img, text, fc, oc, os, bold, italic, pos, offset, fs, False)
         return i, img
 
-    def auto_element(self, img, args, i):
+    def auto_element(self, img, args, i): # auto element parsing
         characters = []
         pos = "middle"
         offset = (0, 0)
@@ -993,7 +969,7 @@ class GBFTM():
         img = self.make_img_from_element(img, characters, pos, offset, ratio, display, False)
         return i, img
 
-    def auto_party(self, img, args, i):
+    def auto_party(self, img, args, i): # auto party drawing
         characters = []
         try:
             input("Use the GBFPIB bookmark to copy a party data and press Return to continue")
@@ -1050,7 +1026,7 @@ class GBFTM():
         
         return i, img
 
-    def auto(self, args):
+    def auto(self, args): # main auto parsing
         try:
             i = 0
             img = self.make_canvas((1280, 720))
