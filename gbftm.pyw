@@ -13,12 +13,12 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.5")
+        print("GBF Thumbnail Maker v1.6")
         self.assets = []
         self.settings = {}
+        self.load()
         self.client = None
         self.list_assets()
-        self.test_twitter(silent=True)
         self.cache = {}
         self.classes = { # class prefix (gotta add them manually, sadly)
             10: 'sw',
@@ -93,7 +93,7 @@ class GBFTM():
     def test_twitter(self, silent=False): #  test if twitter is available
         try:
             self.client = tweepy.Client(bearer_token = self.settings.get('twitter', ''))
-            if not silent: print("Twitter connected")
+            if not silent: print("Twitter set")
             return True
         except:
             self.client = None
@@ -140,10 +140,10 @@ class GBFTM():
 
     def retrieve_raid_image(self, search): # retrieve and save a raid image from its tweetdeck code
         try:
-            if self.client is None:
+            if self.client is None and not self.test_twitter():
                 print("Twitter Bearer token not set")
-                return none
-            tweets = self.client.search_recent_tweets(query=search, tweet_fields=['source'], user_fields=['profile_image_url'], media_fields=['preview_image_url', 'url'], expansions=['author_id', 'attachments.media_keys', 'entities.mentions.username', 'referenced_tweets.id', 'referenced_tweets.id.author_id'], max_results=10)
+                return None
+            tweets = self.client.search_recent_tweets(query=search, tweet_fields=['source'], media_fields=['preview_image_url', 'url'], expansions=['attachments.media_keys'], max_results=10, user_auth=False)
             try: media = {m["media_key"]: m for m in tweets.includes['media']}
             except: media = {}
             for t in tweets.data:
@@ -157,8 +157,8 @@ class GBFTM():
                     print("Image saved as", raid_key + ".jpg")
                     return raid_key + ".jpg"
             print("No images found")
-        except:
-            print("An error occured")
+        except Exception as e:
+            print("An error occured:", e)
         return None
 
     def edit_settings(self): # edit setting menu
@@ -185,6 +185,7 @@ class GBFTM():
             print("[0] Download Item")
             print("[1] Download Pride of Ascendant")
             print("[2] Download from URL")
+            print("[3] Download from Twitter")
             print("[Any] Back")
             s = input()
             match s:
@@ -210,10 +211,13 @@ class GBFTM():
                         print("Invalid ID")
                         continue
                 case "2":
-                    u = int(input("Input the URL:"))
+                    u = input("Input the URL:")
                     if not u.startswith("http") and not u.endswith(".png") and not u.endswith(".jpg"):
                         print("Invalid URL")
                         continue
+                case "3":
+                    self.retrieve_raid_image(input("Input a Tweetdeck code:"))
+                    continue
                 case _:
                     break
             try:
@@ -290,7 +294,7 @@ class GBFTM():
 
     def dlAndPasteImage(self, img, url, offset, resize=None, resizeType="default"): # call dlImage() and pasteImage()
         with BytesIO(self.dlImage(url)) as file_jpgdata:
-            self.pasteImage(img, file_jpgdata, offset, resize, resizeType)
+            return self.pasteImage(img, file_jpgdata, offset, resize, resizeType)
 
     def pasteImage(self, img, file, offset, resize=None, resizeType="default"): # paste an image onto another
         buffers = [Image.open(file)]
@@ -309,9 +313,17 @@ class GBFTM():
                     mod = max(resize[0]/size[0], resize[1]/size[1])
                     offset = self.addTuple(offset, (int(resize[0]-size[0]*mod)//2, int(resize[1]-size[1]*mod)//2))
                     buffers.append(buffers[-1].resize((int(size[0]*mod), int(size[1]*mod)), Image.LANCZOS))
-        img.paste(buffers[-1], offset, buffers[-1])
+        size = buffers[-1].size
+        if size[0] == img.size[0] and size[1] == img.size[1]:
+            img = Image.alpha_composite(img, buffers[-1])
+        else:
+            layer = self.make_canvas((1280, 720))
+            layer.paste(buffers[-1], offset, buffers[-1])
+            img = Image.alpha_composite(img, layer)
+            layer.close()
         for buf in buffers: buf.close()
         del buffers
+        return img
 
     def fixCase(self, terms): # function to fix the case (for wiki search requests)
         terms = terms.split(' ')
@@ -667,9 +679,9 @@ class GBFTM():
             if size is None: continue
             size = self.mulTuple(size, ratio)
             if u.startswith("http"):
-                self.dlAndPasteImage(modified, u, cur_pos, resize=size)
+                modified = self.dlAndPasteImage(modified, u, cur_pos, resize=size)
             else:
-                self.pasteImage(modified, u, cur_pos, resize=size)
+                modified = self.pasteImage(modified, u, cur_pos, resize=size)
             cur_pos = self.addTuple(cur_pos, (size[0], 0))
         if preview:
             modified.show()
@@ -793,7 +805,7 @@ class GBFTM():
         res = self.search_asset(query)
         if len(res) == 0:
             print("No results found")
-            if self.client is not None:
+            if self.client is not None and self.test_twitter(silent=True):
                 print("Searching on Twitter...")
                 b = self.retrieve_raid_image(query)
                 if b is None:
@@ -831,7 +843,7 @@ class GBFTM():
                     break
                 else:
                     print("Invalid choice")
-        self.pasteImage(img, "assets/" + b, (0, 0), (1280, 720), rtype)
+        return self.pasteImage(img, "assets/" + b, (0, 0), (1280, 720), rtype)
 
     def make(self, img=None): # main sub menu
         try:
@@ -841,7 +853,7 @@ class GBFTM():
                 print()
                 s = input("Search a background (Leave blank to skip):")
                 if s != "":
-                    self.make_background(img, s)
+                    img = self.make_background(img, s)
             else:
                 init = True
             while True:
@@ -1033,7 +1045,7 @@ class GBFTM():
             while i < len(args):
                 match args[i]:
                     case '-bg':
-                        rtype = None
+                        rtype = '-fit'
                         thumb = args[i+1]
                         try:
                             if args[i+2] in ['-fit', '-fill']:
@@ -1043,7 +1055,7 @@ class GBFTM():
                                 i += 1
                         except:
                             i += 1
-                        self.make_background(img, thumb, rtype[1:])
+                        img = self.make_background(img, thumb, rtype[1:])
                     case '-text':
                         i, img = self.auto_text(img, args, i+1)
                     case '-element':
@@ -1052,6 +1064,10 @@ class GBFTM():
                         i, img = self.auto_party(img, args, i+1)
                     case '-manual':
                         img = self.make(img)
+                    case '-fadein':
+                        img = self.pasteImage(img, "assets/fade_in.png", (0,40), resize=(1280,640), resizeType="default")
+                    case '-nm150':
+                        img = self.pasteImage(img, "assets/nm150_filter.png", (0,40), resize=(1280,640), resizeType="default")
                 i += 1
             img.save("thumbnail.png", "PNG")
             print("Image saved to thumbnail.png")
