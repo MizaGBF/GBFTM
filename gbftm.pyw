@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.9")
+        print("GBF Thumbnail Maker v1.10")
         self.assets = []
         self.settings = {}
         self.load()
@@ -154,6 +154,7 @@ class GBFTM():
                 print("Twitter Bearer token not set")
                 return None
             tweets = self.client.search_recent_tweets(query=search, tweet_fields=['source'], media_fields=['preview_image_url', 'url'], expansions=['attachments.media_keys'], max_results=10, user_auth=False)
+            if tweets.data is None: raise Exception("No results found")
             try: media = {m["media_key"]: m for m in tweets.includes['media']}
             except: media = {}
             for t in tweets.data:
