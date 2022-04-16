@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.8")
+        print("GBF Thumbnail Maker v1.9")
         self.assets = []
         self.settings = {}
         self.load()
@@ -312,17 +312,17 @@ class GBFTM():
         if resize is not None:
             match resizeType.lower():
                 case "default":
-                    buffers.append(buffers[-1].resize(resize, Image.LANCZOS))
+                    buffers.append(buffers[-1].resize(resize, Image.Resampling.LANCZOS))
                 case "fit":
                     size = buffers[-1].size
                     mod = min(resize[0]/size[0], resize[1]/size[1])
                     offset = self.addTuple(offset, (int(resize[0]-size[0]*mod)//2, int(resize[1]-size[1]*mod)//2))
-                    buffers.append(buffers[-1].resize((int(size[0]*mod), int(size[1]*mod)), Image.LANCZOS))
+                    buffers.append(buffers[-1].resize((int(size[0]*mod), int(size[1]*mod)), Image.Resampling.LANCZOS))
                 case "fill":
                     size = buffers[-1].size
                     mod = max(resize[0]/size[0], resize[1]/size[1])
                     offset = self.addTuple(offset, (int(resize[0]-size[0]*mod)//2, int(resize[1]-size[1]*mod)//2))
-                    buffers.append(buffers[-1].resize((int(size[0]*mod), int(size[1]*mod)), Image.LANCZOS))
+                    buffers.append(buffers[-1].resize((int(size[0]*mod), int(size[1]*mod)), Image.Resampling.LANCZOS))
         size = buffers[-1].size
         if size[0] == img.size[0] and size[1] == img.size[1] and offset[0] == 0 and offset[1] == 0:
             img = Image.alpha_composite(img, buffers[-1])
@@ -958,7 +958,10 @@ class GBFTM():
                 case '-input':
                     s = self.check_id(input("Please input the id of the element to add:"))
                     if s is None:
-                        raise Exception("Invalid ID")
+                        if args[i+1] in self.assets:
+                            characters.append(args[i+1])
+                        else:
+                            raise Exception("Invalid ID or asset")
                     else:
                         characters.append(s)
                 case '-import':
@@ -966,7 +969,10 @@ class GBFTM():
                 case '-add':
                     s = self.check_id(args[i+1])
                     if s is None:
-                        raise Exception("Invalid ID")
+                        if args[i+1] in self.assets:
+                            characters.append(args[i+1])
+                        else:
+                            raise Exception("Invalid ID or asset")
                     else:
                         characters.append(s)
                     i += 1
