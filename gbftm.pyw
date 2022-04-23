@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.10")
+        print("GBF Thumbnail Maker v1.11")
         self.assets = []
         self.settings = {}
         self.load()
@@ -326,15 +326,15 @@ class GBFTM():
                     buffers.append(buffers[-1].resize((int(size[0]*mod), int(size[1]*mod)), Image.Resampling.LANCZOS))
         size = buffers[-1].size
         if size[0] == img.size[0] and size[1] == img.size[1] and offset[0] == 0 and offset[1] == 0:
-            img = Image.alpha_composite(img, buffers[-1])
+            modified = Image.alpha_composite(img, buffers[-1])
         else:
             layer = self.make_canvas((1280, 720))
             layer.paste(buffers[-1], offset, buffers[-1])
-            img = Image.alpha_composite(img, layer)
+            modified = Image.alpha_composite(img, layer)
             layer.close()
         for buf in buffers: buf.close()
         del buffers
-        return img
+        return modified
 
     def fixCase(self, terms): # function to fix the case (for wiki search requests)
         terms = terms.split(' ')
@@ -1004,23 +1004,29 @@ class GBFTM():
         img = self.make_img_from_element(img, characters, pos, offset, ratio, display, False)
         return i, img
 
-    def auto_party(self, img, args, i): # auto party drawing
+    def auto_party(self, img, args, i, noskin=False): # auto party drawing
         characters = []
         try:
             input("Use the GBFPIB bookmark to copy a party data and press Return to continue")
             export = json.loads(pyperclip.paste())
             babyl = (len(export['c']) > 5)
-            characters.append(export['pcjs'])
+            if noskin:
+                characters.append(self.get_mc_job_look(export['pcjs'], export['p']))
+            else:
+                characters.append(export['pcjs'])
             if babyl: nchara = 4
             else: nchara = 5
             for x in range(0, nchara):
                 if babyl and x == 0: continue
                 if x >= len(export['c']) or export['c'][x] is None: characters.append("3999999999")
-                if export['c'][x] in self.nullchar: 
-                    cid = "{}_{}_0{}".format(export['c'][x], self.get_uncap_id(export['cs'][x]), export['ce'][x])
+                if noskin:
+                    if export['c'][x] in self.nullchar: 
+                        cid = "{}_{}_0{}".format(export['c'][x], self.get_uncap_id(export['cs'][x]), export['ce'][x])
+                    else:
+                        cid = "{}_{}".format(export['c'][x], self.get_uncap_id(export['cs'][x]))
+                    characters.append(cid)
                 else:
-                    cid = "{}_{}".format(export['c'][x], self.get_uncap_id(export['cs'][x]))
-                characters.append(export['ci'][x])
+                    characters.append(export['ci'][x])
             if export['s'][0] is not None:
                 characters.append(export['ss'][0])
             if export['w'][0] is not None and export['wl'][0] is not None:
@@ -1089,6 +1095,8 @@ class GBFTM():
                         i, img = self.auto_element(img, args, i+1)
                     case '-party':
                         i, img = self.auto_party(img, args, i+1)
+                    case '-party_noskin':
+                        i, img = self.auto_party(img, args, i+1, noskin=True)
                     case '-manual':
                         img = self.make(img)
                     case '-fadein':
