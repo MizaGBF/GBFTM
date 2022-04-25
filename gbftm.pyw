@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.11")
+        print("GBF Thumbnail Maker v1.12")
         self.assets = []
         self.settings = {}
         self.load()
@@ -90,6 +90,20 @@ class GBFTM():
                 "assets/{}",
                 "assets/{}",
                 "assets/{}"
+            ],
+            [
+                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/s/{}.jpg",
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/deckcombination/base_empty_weapon_sub.png",
+                "",
+                "",
+                ""
+            ],
+            [
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/s/{}.jpg",
+                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/deckcombination/base_empty_npc.jpg",
+                "",
+                "",
+                ""
             ]
         ]
         self.possible_pos = ["topleft", "left", "bottomleft", "bottom", "bottomright", "right", "topright", "top", "middle"]
@@ -618,37 +632,33 @@ class GBFTM():
 
     def get_element_size(self, c, display): # retrive an element asset and return its size
         try:
-            try:
-                if len(c.replace('skin/', '').split('_')[0]) < 10: raise Exception("MC?")
-                int(c.replace('skin/', '').split('_')[0])
-                t = int(c.replace('skin/', '')[0])
-            except Exception as e:
-                if str(e) == "MC?":
-                    t = 0
-                    if len(c.split("_")) != 4:
-                        try:
-                            c = self.get_mc_job_look(None, c)
-                        except:
-                            if c in self.assets:
-                                t = 4
-                            else:
-                                return None, None
-                else:
-                    if c in self.assets:
-                        t = 4
+            if c == "1999999999":
+                t = 5
+            elif c == "3999999999":
+                t = 6
+            else:
+                try:
+                    if len(c.replace('skin/', '').split('_')[0]) < 10: raise Exception("MC?")
+                    int(c.replace('skin/', '').split('_')[0])
+                    t = int(c.replace('skin/', '')[0])
+                except Exception as e:
+                    if str(e) == "MC?":
+                        t = 0
+                        if len(c.split("_")) != 4:
+                            try:
+                                c = self.get_mc_job_look(None, c)
+                            except:
+                                if c in self.assets:
+                                    t = 4
+                                else:
+                                    return None, None
                     else:
-                        return None, None
-            match display.lower():
-                case "squareicon":
-                    u = self.asset_urls[t][0].format(c)
-                case "partyicon":
-                    u = self.asset_urls[t][1].format(c)
-                case "fullart":
-                    u = self.asset_urls[t][2].format(c)
-                case "homeart":
-                    u = self.asset_urls[t][3].format(c)
-                case "skycompass":
-                    u = self.asset_urls[t][4].format(c)
+                        if c in self.assets:
+                            t = 4
+                        else:
+                            return None, None
+            try: u = self.asset_urls[t][self.possible_display.index(display.lower())].format(c)
+            except: u = self.asset_urls[t][self.possible_display.index(display.lower())]
             if u.startswith("http"):
                 with BytesIO(self.dlImage(u)) as file_jpgdata:
                     buf = Image.open(file_jpgdata)
@@ -670,7 +680,7 @@ class GBFTM():
             print("An error occured")
             return None
 
-    def make_img_from_element(self, img, characters = [], pos = "middle", offset = (0, 0), ratio = 1.0, display = "squareicon", preview=False): # draw elements onto an image
+    def make_img_from_element(self, img, characters = [], pos = "middle", offset = (0, 0), ratio = 1.0, display = "squareicon", preview=False, fixedsize=None): # draw elements onto an image
         modified = img.copy()
         d = ImageDraw.Draw(modified, 'RGBA')
         match pos.lower():
@@ -696,6 +706,8 @@ class GBFTM():
         for c in characters:
             size, u = self.get_element_size(c, display)
             if size is None: continue
+            if fixedsize is not None:
+                size = fixedsize
             size = self.mulTuple(size, ratio)
             if u.startswith("http"):
                 modified = self.dlAndPasteImage(modified, u, cur_pos, resize=size)
@@ -1014,11 +1026,14 @@ class GBFTM():
                 characters.append(self.get_mc_job_look(export['pcjs'], export['p']))
             else:
                 characters.append(export['pcjs'])
-            if babyl: nchara = 4
+            if babyl: nchara = 12
             else: nchara = 5
             for x in range(0, nchara):
-                if babyl and x == 0: continue
-                if x >= len(export['c']) or export['c'][x] is None: characters.append("3999999999")
+                if babyl and x == 0:
+                    continue
+                if x >= len(export['c']) or export['c'][x] is None:
+                    characters.append("3999999999")
+                    continue
                 if noskin:
                     if export['c'][x] in self.nullchar: 
                         cid = "{}_{}_0{}".format(export['c'][x], self.get_uncap_id(export['cs'][x]), export['ce'][x])
@@ -1031,6 +1046,8 @@ class GBFTM():
                 characters.append(export['ss'][0])
             if export['w'][0] is not None and export['wl'][0] is not None:
                 characters.append(str(export['w'][0]) + "00")
+            else:
+                characters.append("1999999999")
         except Exception as e:
             print("An error occured while importing a party:", e)
             raise Exception("Failed to import party data")
@@ -1055,14 +1072,17 @@ class GBFTM():
                     i -= 1
                     break
             i += 1
-        img = self.make_img_from_element(img, characters[:4], pos, offset, ratio, "partyicon", False)
-        if not babyl:
-            img = self.make_img_from_element(img, characters[4:6], pos, self.addTuple(offset, self.mulTuple((78*4+15, 0), ratio)), ratio, "partyicon", False)
-            diff = 0
+        if babyl:
+            img = self.make_img_from_element(img, characters[:4], pos, offset, ratio, "squareicon", False, (100, 100))
+            img = self.make_img_from_element(img, characters[4:8], pos, self.addTuple(offset, self.mulTuple((0, 100), ratio)), ratio, "squareicon", False, (100, 100))
+            img = self.make_img_from_element(img, characters[8:12], pos, self.addTuple(offset, self.mulTuple((0, 200), ratio)), ratio, "squareicon", False, (100, 100))
+            img = self.make_img_from_element(img, characters[12:13], pos, self.addTuple(offset, self.mulTuple((0, 310), ratio)), ratio, "partyicon", False, (192, 108))
+            img = self.make_img_from_element(img, characters[13:14], pos, self.addTuple(offset, self.mulTuple((208, 310), ratio)), ratio, "partyicon", False, (192, 108))
         else:
-            diff = 2
-        img = self.make_img_from_element(img, characters[6-diff:7-diff], pos, self.addTuple(offset, self.mulTuple((15, 142+10), ratio)), 0.75*ratio, "partyicon", False)
-        img = self.make_img_from_element(img, characters[7-diff:8-diff], pos, self.addTuple(offset, self.mulTuple((15+280*0.75+15, 142+10), ratio)), 0.75*ratio, "partyicon", False)
+            img = self.make_img_from_element(img, characters[:4], pos, offset, ratio, "partyicon", False, (78, 142))
+            img = self.make_img_from_element(img, characters[4:6], pos, self.addTuple(offset, self.mulTuple((78*4+15, 0), ratio)), ratio, "partyicon", False, (78, 142))
+            img = self.make_img_from_element(img, characters[6:7], pos, self.addTuple(offset, self.mulTuple((15, 142+10), ratio)), 0.75*ratio, "partyicon", False, (280, 160))
+            img = self.make_img_from_element(img, characters[7:8], pos, self.addTuple(offset, self.mulTuple((15+280*0.75+15, 142+10), ratio)), 0.75*ratio, "partyicon", False, (280, 160))
         
         return i, img
 

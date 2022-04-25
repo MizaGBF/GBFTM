@@ -1,0 +1,1 @@
+python gbftm.pyw -auto -bg tower_of_babyl.png -fill -text -input -position topleft -offset 20,20 -fontsize 120 -bold -color 255,255,255 -outcolor 0,0,0 -outsize 5 -party -position top -ratio 1.4 -offset 30,40 -text -input -position bottomleft -offset 30,-30 -fontsize 100 -bold
