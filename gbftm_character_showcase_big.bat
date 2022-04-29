@@ -1,1 +1,1 @@
-python gbftm.pyw -auto -bg -input -fadein -element -input -display skycompass -position top -offset -300,-300 -ratio 1 -text -input -position bottomleft -offset 30,-30 -fontsize 100 -bold
+python gbftm.py -auto -bg -input -fadein -element -input -display skycompass -position top -offset -300,-300 -ratio 1 -text -input -position bottomleft -offset 30,-30 -fontsize 100 -bold
