@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.12")
+        print("GBF Thumbnail Maker v1.13")
         self.assets = []
         self.settings = {}
         self.load()
@@ -482,6 +482,7 @@ class GBFTM():
             print("[8] Set Font Size (Current:" + str(fs) + ")")
             print("[9] Preview")
             print("[10] Confirm")
+            print("[11] Cancel")
             s = input()
             match s:
                 case "0":
@@ -543,6 +544,8 @@ class GBFTM():
                     self.make_img_from_text(img, text, fc, oc, os, bold, italic, pos, offset, fs, True)
                 case "10":
                     return self.make_img_from_text(img, text, fc, oc, os, bold, italic, pos, offset, fs, False)
+                case "11":
+                    return img
 
     def get_mc_job_look(self, skin, job): # get the MC unskined filename based on id
         jid = job // 10000
@@ -741,6 +744,7 @@ class GBFTM():
             print("[7] Set Offset (Current:" + str(offset) + ")")
             print("[8] Preview")
             print("[9] Confirm")
+            print("[10] Cancel")
             s = input()
             match s:
                 case "0":
@@ -772,9 +776,9 @@ class GBFTM():
                         print(s, "added")
                 case "1":
                     print("Current Element(s):", characters)
-                    s = input("Please input the ID of the element to remove:")
+                    s = input("Please input the name of the element to remove:")
                     if s not in characters:
-                        print("Invalid ID")
+                        print("Invalid name")
                     else:
                         i = 0
                         while i < len(characters):
@@ -831,6 +835,8 @@ class GBFTM():
                     self.make_img_from_element(img, characters, pos, offset, ratio, display, True)
                 case "9":
                     return self.make_img_from_element(img, characters, pos, offset, ratio, display, False)
+                case "10":
+                    return img
 
     def make_background(self, img, query, rtype=None): # menu to add a background
         res = self.search_asset(query)
