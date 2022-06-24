@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self):
-        print("GBF Thumbnail Maker v1.13")
+        print("GBF Thumbnail Maker v1.14")
         self.assets = []
         self.settings = {}
         self.load()
@@ -358,7 +358,8 @@ class GBFTM():
             up = False
             special = {"and":"and", "of":"of", "de":"de", "for":"for", "the":"the", "(sr)":"(SR)", "(ssr)":"(SSR)", "(r)":"(R)"} # case where we don't don't fix anything and return it
             if term.lower() in special:
-                return special[term.lower()]
+                fixeds.append(special[term.lower()])
+                continue
             for i in range(0, len(term)): # for each character
                 if term[i].isalpha(): # if letter
                     if term[i].isupper(): # is uppercase
@@ -1129,6 +1130,12 @@ class GBFTM():
                         img = self.pasteImage(img, "assets/fade_in.png", (0,40), resize=(1280,640), resizeType="default")
                     case '-nm150':
                         img = self.pasteImage(img, "assets/nm150_filter.png", (0,40), resize=(1280,640), resizeType="default")
+                        gwid = input("Input the GW Number:")
+                        img = self.dlAndPasteImage(img, "http://game-a1.granbluefantasy.jp/assets_en/img/sp/event/teamraid{}/assets/thumb/teamraid{}_hell150.png".format(gwid.zfill(3), gwid.zfill(3)), (5,410), resize=(304,256), resizeType="default")
+                    case '-nm200':
+                        img = self.pasteImage(img, "assets/nm200_filter.png", (0,40), resize=(1280,640), resizeType="default")
+                        gwid = input("Input the GW Number:")
+                        img = self.dlAndPasteImage(img, "http://game-a1.granbluefantasy.jp/assets_en/img/sp/event/teamraid{}/assets/thumb/teamraid{}_hell200.png".format(gwid.zfill(3), gwid.zfill(3)), (5,410), resize=(304,256), resizeType="default")
                     case _:
                         print("Warning: Ignoring unknown parameter:", args[i])
                 i += 1
