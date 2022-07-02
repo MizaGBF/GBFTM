@@ -9,3 +9,5 @@
 ### Notes  
 * Still in development.  
 * Sister project to [GBFPIB](https://github.com/MizaGBF/GBFPIB), this tool can import data from GBF party retrieved using the GBFPIB bookmark.  
+* Version 1.15 and higher can be imported into GBFPIB version 8.0 or higher.  
+* A Twitter account is required to fetch raid thumbnails from Twitter.  

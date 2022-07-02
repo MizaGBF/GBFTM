@@ -1,1 +1,1 @@
-python gbftm.py -auto -bg -input -fadein -element -input -display partyicon -position topleft -offset 38,433 -ratio 1.25 -text -input -position topleft -offset 70,100 -fontsize 190 -bold -outcolor 0,0,0 -outsize 8
+python gbftm.py -auto -bg -input -fadein -party_mainsummon -position topleft -offset 38,433 -ratio 1.25 -text -input -position topleft -offset 70,100 -fontsize 190 -bold -outcolor 0,0,0 -outsize 8

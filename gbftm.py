@@ -12,8 +12,9 @@ import time
 import sys
 
 class GBFTM():
-    def __init__(self):
-        print("GBF Thumbnail Maker v1.14")
+    def __init__(self, path=""):
+        print("GBF Thumbnail Maker v1.15")
+        self.path = path
         self.assets = []
         self.settings = {}
         self.load()
@@ -110,7 +111,7 @@ class GBFTM():
         self.possible_display = ["squareicon", "partyicon", "fullart", "homeart", "skycompass"]
 
     def list_assets(self): # list all .png or .jpg files in the /assets folder
-        try: self.assets = [f for f in os.listdir("assets") if (os.path.isfile(os.path.join("assets", f)) and (f.endswith('.png') or f.endswith('.jpg')))]
+        try: self.assets = [f for f in os.listdir(self.path + "assets") if (os.path.isfile(os.path.join(self.path + "assets", f)) and (f.endswith('.png') or f.endswith('.jpg')))]
         except: self.assets = []
         print(len(self.assets), "asset(s) found")
 
@@ -126,7 +127,7 @@ class GBFTM():
 
     def load(self): # load settings.json
         try:
-            with open('settings.json') as f:
+            with open(self.path + 'settings.json') as f:
                 self.settings = json.load(f)
         except Exception as e:
             print("Failed to load settings.json")
@@ -139,7 +140,7 @@ class GBFTM():
 
     def save(self): # save settings.json
         try:
-            with open('settings.json', 'w') as outfile:
+            with open(self.path + 'settings.json', 'w') as outfile:
                 json.dump(self.settings, outfile)
         except:
             pass
@@ -155,12 +156,12 @@ class GBFTM():
             return None
 
     def checkDiskCache(self): # check if cache folder exists (and create it if needed)
-        if not os.path.isdir('cache'):
-            os.mkdir('cache')
+        if not os.path.isdir(self.path + 'cache'):
+            os.mkdir(self.path + 'cache')
 
     def checkAssetFolder(self): # check if assets folder exists (and create it if needed)
-        if not os.path.isdir('assets'):
-            os.mkdir('assets')
+        if not os.path.isdir(self.path + 'assets'):
+            os.mkdir(self.path + 'assets')
 
     def retrieve_raid_image(self, search): # retrieve and save a raid image from its tweetdeck code
         try:
@@ -176,7 +177,7 @@ class GBFTM():
                     raid_key = t.text.split("I need backup!\n")[1].split('\n')[0].lower()
                     img = self.request(media[t['attachments']['media_keys'][0]].url)
                     self.checkAssetFolder()
-                    with open("assets/" + raid_key + ".jpg", "wb") as f:
+                    with open(self.path + "assets/" + raid_key + ".jpg", "wb") as f:
                         f.write(img)
                     self.assets.append(raid_key + ".jpg")
                     print("Image saved as", raid_key + ".jpg")
@@ -249,7 +250,7 @@ class GBFTM():
                 img = self.request(u)
                 self.checkAssetFolder()
                 s = input("Please input a name for this asset:")
-                with open("assets/" + s + "." + u.split(".")[-1], "wb") as f:
+                with open(self.path + "assets/" + s + "." + u.split(".")[-1], "wb") as f:
                     f.write(img)
                 self.assets.append(s + "." + u.split(".")[-1])
             except:
@@ -302,14 +303,14 @@ class GBFTM():
         if url not in self.cache:
             self.checkDiskCache()
             try: # get from disk cache if enabled
-                with open("cache/" + base64.b64encode(url.encode('utf-8')).decode('utf-8'), "rb") as f:
+                with open(self.path + "cache/" + base64.b64encode(url.encode('utf-8')).decode('utf-8'), "rb") as f:
                     self.cache[url] = f.read()
             except: # else request it from gbf
                 req = request.Request(url)
                 url_handle = request.urlopen(req)
                 self.cache[url] = url_handle.read()
                 try:
-                    with open("cache/" + base64.b64encode(url.encode('utf-8')).decode('utf-8'), "wb") as f:
+                    with open(self.path + "cache/" + base64.b64encode(url.encode('utf-8')).decode('utf-8'), "wb") as f:
                         f.write(self.cache[url])
                 except Exception as e:
                     print(url, ":", e)
@@ -424,7 +425,7 @@ class GBFTM():
         font_file = "font"
         if bold: font_file += "b"
         if italic: font_file += "i"
-        font = ImageFont.truetype("assets/" + font_file + ".ttf", fs, encoding="unic")
+        font = ImageFont.truetype(self.path + "assets/" + font_file + ".ttf", fs, encoding="unic")
         nl = text.split('\n')
         size = [0, 0]
         for l in nl:
@@ -663,6 +664,7 @@ class GBFTM():
                             return None, None
             try: u = self.asset_urls[t][self.possible_display.index(display.lower())].format(c)
             except: u = self.asset_urls[t][self.possible_display.index(display.lower())]
+            if t == 4: u = self.path + u
             if u.startswith("http"):
                 with BytesIO(self.dlImage(u)) as file_jpgdata:
                     buf = Image.open(file_jpgdata)
@@ -851,7 +853,7 @@ class GBFTM():
                     raise Exception("No valid background found")
             else:
                 raise Exception("No valid background found")
-        elif len(res) == 1:
+        elif len(res) == 1 or self.path != "":
             b = res[0]
         else:
             while True:
@@ -881,7 +883,7 @@ class GBFTM():
                     break
                 else:
                     print("Invalid choice")
-        return self.pasteImage(img, "assets/" + b, (0, 0), (1280, 720), rtype)
+        return self.pasteImage(img, self.path + "assets/" + b, (0, 0), (1280, 720), rtype)
 
     def make(self, img=None): # main sub menu
         try:
@@ -932,7 +934,7 @@ class GBFTM():
         while i < len(args):
             match args[i]:
                 case '-input':
-                    text = input("Please input the text to draw:")
+                    text = input("Please input the text to write:")
                 case '-content':
                     text = args[i+1]
                     i += 1
@@ -1023,19 +1025,24 @@ class GBFTM():
         img = self.make_img_from_element(img, characters, pos, offset, ratio, display, False)
         return i, img
 
-    def auto_party(self, img, args, i, noskin=False): # auto party drawing
+    def auto_party(self, img, args, i, noskin=False, auto_import=None, mainsummon=False): # auto party drawing
         characters = []
         try:
-            input("Use the GBFPIB bookmark to copy a party data and press Return to continue")
-            export = json.loads(pyperclip.paste())
-            babyl = (len(export['c']) > 5)
-            if noskin:
-                characters.append(self.get_mc_job_look(export['pcjs'], export['p']))
+            if auto_import is not None:
+                export = auto_import
             else:
-                characters.append(export['pcjs'])
+                input("Use the GBFPIB bookmark to copy a party data and press Return to continue")
+                export = json.loads(pyperclip.paste())
+            babyl = (len(export['c']) > 5)
+            if not mainsummon:
+                if noskin:
+                    characters.append(self.get_mc_job_look(export['pcjs'], export['p']))
+                else:
+                    characters.append(export['pcjs'])
             if babyl: nchara = 12
             else: nchara = 5
             for x in range(0, nchara):
+                if mainsummon:break
                 if babyl and x == 0:
                     continue
                 if x >= len(export['c']) or export['c'][x] is None:
@@ -1051,10 +1058,11 @@ class GBFTM():
                     characters.append(export['ci'][x])
             if export['s'][0] is not None:
                 characters.append(export['ss'][0])
-            if export['w'][0] is not None and export['wl'][0] is not None:
-                characters.append(str(export['w'][0]) + "00")
-            else:
-                characters.append("1999999999")
+            if not mainsummon:
+                if export['w'][0] is not None and export['wl'][0] is not None:
+                    characters.append(str(export['w'][0]) + "00")
+                else:
+                    characters.append("1999999999")
         except Exception as e:
             print("An error occured while importing a party:", e)
             raise Exception("Failed to import party data")
@@ -1079,7 +1087,9 @@ class GBFTM():
                     i -= 1
                     break
             i += 1
-        if babyl:
+        if mainsummon:
+            img = self.make_img_from_element(img, characters, pos, offset, ratio, "partyicon", False)
+        elif babyl:
             img = self.make_img_from_element(img, characters[:4], pos, offset, ratio, "squareicon", False, (100, 100))
             img = self.make_img_from_element(img, characters[4:8], pos, self.addTuple(offset, self.mulTuple((0, 100), ratio)), ratio, "squareicon", False, (100, 100))
             img = self.make_img_from_element(img, characters[8:12], pos, self.addTuple(offset, self.mulTuple((0, 200), ratio)), ratio, "squareicon", False, (100, 100))
@@ -1093,7 +1103,7 @@ class GBFTM():
         
         return i, img
 
-    def auto(self, args): # main auto parsing
+    def auto(self, args, nowait=False, auto_import=None): # main auto parsing
         try:
             i = 0
             img = self.make_canvas((1280, 720))
@@ -1121,19 +1131,21 @@ class GBFTM():
                     case '-element':
                         i, img = self.auto_element(img, args, i+1)
                     case '-party':
-                        i, img = self.auto_party(img, args, i+1)
+                        i, img = self.auto_party(img, args, i+1, auto_import=auto_import)
+                    case '-party_mainsummon':
+                        i, img = self.auto_party(img, args, i+1, noskin=True, auto_import=auto_import, mainsummon=True)
                     case '-party_noskin':
-                        i, img = self.auto_party(img, args, i+1, noskin=True)
+                        i, img = self.auto_party(img, args, i+1, noskin=True, auto_import=auto_import)
                     case '-manual':
                         img = self.make(img)
                     case '-fadein':
-                        img = self.pasteImage(img, "assets/fade_in.png", (0,40), resize=(1280,640), resizeType="default")
+                        img = self.pasteImage(img, self.path + "assets/fade_in.png", (0,40), resize=(1280,640), resizeType="default")
                     case '-nm150':
-                        img = self.pasteImage(img, "assets/nm150_filter.png", (0,40), resize=(1280,640), resizeType="default")
+                        img = self.pasteImage(img, self.path + "assets/nm150_filter.png", (0,40), resize=(1280,640), resizeType="default")
                         gwid = input("Input the GW Number:")
                         img = self.dlAndPasteImage(img, "http://game-a1.granbluefantasy.jp/assets_en/img/sp/event/teamraid{}/assets/thumb/teamraid{}_hell150.png".format(gwid.zfill(3), gwid.zfill(3)), (5,410), resize=(304,256), resizeType="default")
                     case '-nm200':
-                        img = self.pasteImage(img, "assets/nm200_filter.png", (0,40), resize=(1280,640), resizeType="default")
+                        img = self.pasteImage(img, self.path + "assets/nm200_filter.png", (0,40), resize=(1280,640), resizeType="default")
                         gwid = input("Input the GW Number:")
                         img = self.dlAndPasteImage(img, "http://game-a1.granbluefantasy.jp/assets_en/img/sp/event/teamraid{}/assets/thumb/teamraid{}_hell200.png".format(gwid.zfill(3), gwid.zfill(3)), (5,410), resize=(304,256), resizeType="default")
                     case _:
@@ -1144,8 +1156,9 @@ class GBFTM():
         except Exception as e:
             print("Error while parsing argument", i, ":", args[i])
             print("Exception:", e)
-        print("Closing in 5 seconds...")
-        time.sleep(5)
+        if not nowait:
+            print("Closing in 5 seconds...")
+            time.sleep(5)
 
 if __name__ == "__main__":
     t = GBFTM()
