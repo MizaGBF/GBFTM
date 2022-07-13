@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self, path=""):
-        print("GBF Thumbnail Maker v1.15")
+        print("GBF Thumbnail Maker v1.16")
         self.path = path
         self.assets = []
         self.settings = {}
@@ -58,31 +58,31 @@ class GBFTM():
         ]
         self.asset_urls = [
             [
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/s/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/quest/{}.jpg",
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/s/{}.jpg",
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/quest/{}.jpg",
                 "ttp://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/my/{}.png",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/job_change/{}.png",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/job_change/{}.png"
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/job_change/{}.png",
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/leader/job_change/{}.png"
             ],
             [
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/s/{}.jpg",
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/m/{}.jpg",
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/b/{}.png",
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/b/{}.png",
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/b/{}.png"
+                "https://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/s/{}.jpg",
+                "https://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/m/{}.jpg",
+                "https://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/b/{}.png",
+                "https://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/b/{}.png",
+                "https://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/b/{}.png"
             ],
             [
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/summon/s/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/summon/m/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/summon/my/{}.png",
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/summon/b/{}.png",
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/summon/b/{}.png"
+                "https://game-a.granbluefantasy.jp/assets_en/img/sp/assets/summon/s/{}.jpg",
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/summon/m/{}.jpg",
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/summon/my/{}.png",
+                "https://game-a.granbluefantasy.jp/assets_en/img/sp/assets/summon/b/{}.png",
+                "https://game-a.granbluefantasy.jp/assets_en/img/sp/assets/summon/b/{}.png"
             ],
             [
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/s/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/quest/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/my/{}.png",
-                "http://game-a.granbluefantasy.jp/assets_en/img_low/sp/assets/npc/b/{}.png",
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/s/{}.jpg",
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/quest/{}.jpg",
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/my/{}.png",
+                "https://game-a.granbluefantasy.jp/assets_en/img_low/sp/assets/npc/b/{}.png",
                 "https://media.skycompass.io/assets/customizes/characters/1138x1138/{}.png"
             ],
             [
@@ -93,15 +93,15 @@ class GBFTM():
                 "assets/{}"
             ],
             [
-                "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/s/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/deckcombination/base_empty_weapon_sub.png",
+                "https://game-a.granbluefantasy.jp/assets_en/img/sp/assets/weapon/s/{}.jpg",
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/deckcombination/base_empty_weapon_sub.png",
                 "",
                 "",
                 ""
             ],
             [
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/s/{}.jpg",
-                "http://game-a1.granbluefantasy.jp/assets_en/img/sp/deckcombination/base_empty_npc.jpg",
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/assets/npc/s/{}.jpg",
+                "https://game-a1.granbluefantasy.jp/assets_en/img/sp/deckcombination/base_empty_npc.jpg",
                 "",
                 "",
                 ""
@@ -219,7 +219,7 @@ class GBFTM():
                     try:
                         s = int(input("Input the item ID:"))
                         if s < 0: raise Exception()
-                        u = "http://game-a.granbluefantasy.jp/assets_en/img/sp/assets/item/article/m/{}.jpg".format(s)
+                        u = "https://game-a.granbluefantasy.jp/assets_en/img/sp/assets/item/article/m/{}.jpg".format(s)
                     except:
                         print("Invalid ID")
                         continue
@@ -232,7 +232,7 @@ class GBFTM():
                             print("[1] Proud+")
                             p = input()
                             if p in ["0", "1"]: break
-                        u = "http://game-a1.granbluefantasy.jp/assets_en/img/sp/quest/assets/free/conquest_{}_proud{}.png".format(str(s).zfill(3), ("plus" if p == "1" else ""))
+                        u = "https://game-a1.granbluefantasy.jp/assets_en/img/sp/quest/assets/free/conquest_{}_proud{}.png".format(str(s).zfill(3), ("plus" if p == "1" else ""))
                     except:
                         print("Invalid ID")
                         continue
@@ -1143,11 +1143,11 @@ class GBFTM():
                     case '-nm150':
                         img = self.pasteImage(img, self.path + "assets/nm150_filter.png", (0,40), resize=(1280,640), resizeType="default")
                         gwid = input("Input the GW Number:")
-                        img = self.dlAndPasteImage(img, "http://game-a1.granbluefantasy.jp/assets_en/img/sp/event/teamraid{}/assets/thumb/teamraid{}_hell150.png".format(gwid.zfill(3), gwid.zfill(3)), (5,410), resize=(304,256), resizeType="default")
+                        img = self.dlAndPasteImage(img, "https://game-a1.granbluefantasy.jp/assets_en/img/sp/event/teamraid{}/assets/thumb/teamraid{}_hell150.png".format(gwid.zfill(3), gwid.zfill(3)), (5,410), resize=(304,256), resizeType="default")
                     case '-nm200':
                         img = self.pasteImage(img, self.path + "assets/nm200_filter.png", (0,40), resize=(1280,640), resizeType="default")
                         gwid = input("Input the GW Number:")
-                        img = self.dlAndPasteImage(img, "http://game-a1.granbluefantasy.jp/assets_en/img/sp/event/teamraid{}/assets/thumb/teamraid{}_hell200.png".format(gwid.zfill(3), gwid.zfill(3)), (5,410), resize=(304,256), resizeType="default")
+                        img = self.dlAndPasteImage(img, "https://game-a1.granbluefantasy.jp/assets_en/img/sp/event/teamraid{}/assets/thumb/teamraid{}_hell200.png".format(gwid.zfill(3), gwid.zfill(3)), (5,410), resize=(304,256), resizeType="default")
                     case _:
                         print("Warning: Ignoring unknown parameter:", args[i])
                 i += 1
