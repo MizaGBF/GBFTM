@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self, path=""):
-        print("GBF Thumbnail Maker v1.16")
+        print("GBF Thumbnail Maker v1.17")
         self.path = path
         self.assets = []
         self.settings = {}
@@ -429,7 +429,7 @@ class GBFTM():
         nl = text.split('\n')
         size = [0, 0]
         for l in nl:
-            s = font.getsize(l, stroke_width=os)
+            s = font.getbbox(l, stroke_width=os)
             size[0] = max(size[0], s[0])
             size[1] += s[1]
         match pos.lower():
