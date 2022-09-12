@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self, path=""):
-        print("GBF Thumbnail Maker v1.18")
+        print("GBF Thumbnail Maker v1.19")
         self.path = path
         self.assets = []
         self.settings = {}
@@ -1147,6 +1147,16 @@ class GBFTM():
                     case '-nm200':
                         img = self.pasteImage(img, self.path + "assets/nm200_filter.png", (0,40), resize=(1280,640), resizeType="default")
                         gwid = input("Input the GW Number:")
+                        img = self.dlAndPasteImage(img, "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/event/teamraid{}/assets/thumb/teamraid{}_hell200.png".format(gwid.zfill(3), gwid.zfill(3)), (5,410), resize=(304,256), resizeType="default")
+                    case '-nm150_auto':
+                        img = self.pasteImage(img, self.path + "assets/nm150_filter.png", (0,40), resize=(1280,640), resizeType="default")
+                        gwid = args[i+1]
+                        i += 1
+                        img = self.dlAndPasteImage(img, "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/event/teamraid{}/assets/thumb/teamraid{}_hell150.png".format(gwid.zfill(3), gwid.zfill(3)), (5,410), resize=(304,256), resizeType="default")
+                    case '-nm200_auto':
+                        img = self.pasteImage(img, self.path + "assets/nm200_filter.png", (0,40), resize=(1280,640), resizeType="default")
+                        gwid = args[i+1]
+                        i += 1
                         img = self.dlAndPasteImage(img, "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/event/teamraid{}/assets/thumb/teamraid{}_hell200.png".format(gwid.zfill(3), gwid.zfill(3)), (5,410), resize=(304,256), resizeType="default")
                     case _:
                         print("Warning: Ignoring unknown parameter:", args[i])
