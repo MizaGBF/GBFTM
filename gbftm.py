@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self, path=""):
-        print("GBF Thumbnail Maker v1.20")
+        print("GBF Thumbnail Maker v1.21")
         self.path = path
         self.assets = []
         self.settings = {}
@@ -52,6 +52,7 @@ class GBFTM():
         self.nullchar = [3030182000, 3020072000]
         self.regex = [
             re.compile('(30[0-9]{8})_01\\.'),
+            re.compile('(20[0-9]{8})_03\\.'),
             re.compile('(20[0-9]{8})_02\\.'),
             re.compile('(20[0-9]{8})\\.'),
             re.compile('(10[0-9]{8})\\.')
