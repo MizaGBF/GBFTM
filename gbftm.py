@@ -1,6 +1,6 @@
 import tweepy
-from urllib import request, parse
-from urllib.parse import quote, unquote
+from urllib import request
+from urllib.parse import quote
 import os
 from PIL import Image, ImageFont, ImageDraw
 import pyperclip
@@ -13,7 +13,8 @@ import sys
 
 class GBFTM():
     def __init__(self, path=""):
-        print("GBF Thumbnail Maker v1.21")
+        self.version = [1, 22]
+        print("GBF Thumbnail Maker v{}.{}".format(self.version[0], self.version[1]))
         self.path = path
         self.assets = []
         self.settings = {}
@@ -130,7 +131,7 @@ class GBFTM():
         try:
             with open(self.path + 'settings.json') as f:
                 self.settings = json.load(f)
-        except Exception as e:
+        except:
             print("Failed to load settings.json")
             while True:
                 print("An empty settings.json file will be created, continue? (y/n)")
@@ -589,7 +590,7 @@ class GBFTM():
             input("Use the GBFPIB bookmark to copy a party data and press Return to continue")
             export = json.loads(pyperclip.paste())
             babyl = (len(export['c']) > 5)
-            sandbox = (len(export['w']) > 10 and not isinstance(export['est'][0], str))
+            #sandbox = (len(export['w']) > 10 and not isinstance(export['est'][0], str))
             options.append(["MC", self.get_mc_job_look(export['pcjs'], export['p']), export['pcjs'], 0])
             if babyl: nchara = 12
             else: nchara = 5
@@ -690,7 +691,6 @@ class GBFTM():
 
     def make_img_from_element(self, img, characters = [], pos = "middle", offset = (0, 0), ratio = 1.0, display = "squareicon", preview=False, fixedsize=None): # draw elements onto an image
         modified = img.copy()
-        d = ImageDraw.Draw(modified, 'RGBA')
         match pos.lower():
             case "topleft":
                 cur_pos = (0, 0)
