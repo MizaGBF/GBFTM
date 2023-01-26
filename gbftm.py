@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self, path=""):
-        self.version = [1, 22]
+        self.version = [1, 23]
         print("GBF Thumbnail Maker v{}.{}".format(self.version[0], self.version[1]))
         self.path = path
         self.assets = []
@@ -170,12 +170,12 @@ class GBFTM():
             if self.client is None and not self.test_twitter():
                 print("Twitter Bearer token not set")
                 return None
-            tweets = self.client.search_recent_tweets(query=search, tweet_fields=['source'], media_fields=['preview_image_url', 'url'], expansions=['attachments.media_keys'], max_results=10, user_auth=False)
+            tweets = self.client.search_recent_tweets(query=search, media_fields=['preview_image_url', 'url'], expansions=['attachments.media_keys'], max_results=10, user_auth=False)
             if tweets.data is None: raise Exception("No results found")
             try: media = {m["media_key"]: m for m in tweets.includes['media']}
             except: media = {}
             for t in tweets.data:
-                if t['data']['source'] == "グランブルー ファンタジー":
+                try:
                     raid_key = t.text.split("I need backup!\n")[1].split('\n')[0].lower()
                     img = self.request(media[t['attachments']['media_keys'][0]].url)
                     self.checkAssetFolder()
@@ -184,6 +184,8 @@ class GBFTM():
                     self.assets.append(raid_key + ".jpg")
                     print("Image saved as", raid_key + ".jpg")
                     return raid_key + ".jpg"
+                except:
+                    pass
             print("No images found")
         except Exception as e:
             print("An error occured:", e)
