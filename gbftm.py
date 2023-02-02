@@ -13,13 +13,12 @@ import sys
 
 class GBFTM():
     def __init__(self, path=""):
-        self.version = [1, 23]
+        self.version = [1, 24]
         print("GBF Thumbnail Maker v{}.{}".format(self.version[0], self.version[1]))
         self.path = path
         self.assets = []
         self.settings = {}
         self.load()
-        self.client = None
         self.list_assets()
         self.cache = {}
         self.classes = { # class prefix (gotta add them manually, sadly)
@@ -117,16 +116,6 @@ class GBFTM():
         except: self.assets = []
         print(len(self.assets), "asset(s) found")
 
-    def test_twitter(self, silent=False): #  test if twitter is available
-        try:
-            self.client = tweepy.Client(bearer_token = self.settings.get('twitter', ''))
-            if not silent: print("Twitter set")
-            return True
-        except:
-            self.client = None
-            if not silent: print("Failed to access Twitter, check your Bearer Token")
-            return False
-
     def load(self): # load settings.json
         try:
             with open(self.path + 'settings.json') as f:
@@ -165,46 +154,13 @@ class GBFTM():
         if not os.path.isdir(self.path + 'assets'):
             os.mkdir(self.path + 'assets')
 
-    def retrieve_raid_image(self, search): # retrieve and save a raid image from its tweetdeck code
-        try:
-            if self.client is None and not self.test_twitter():
-                print("Twitter Bearer token not set")
-                return None
-            tweets = self.client.search_recent_tweets(query=search, media_fields=['preview_image_url', 'url'], expansions=['attachments.media_keys'], max_results=10, user_auth=False)
-            if tweets.data is None: raise Exception("No results found")
-            try: media = {m["media_key"]: m for m in tweets.includes['media']}
-            except: media = {}
-            for t in tweets.data:
-                try:
-                    raid_key = t.text.split("I need backup!\n")[1].split('\n')[0].lower()
-                    img = self.request(media[t['attachments']['media_keys'][0]].url)
-                    self.checkAssetFolder()
-                    with open(self.path + "assets/" + raid_key + ".jpg", "wb") as f:
-                        f.write(img)
-                    self.assets.append(raid_key + ".jpg")
-                    print("Image saved as", raid_key + ".jpg")
-                    return raid_key + ".jpg"
-                except:
-                    pass
-            print("No images found")
-        except Exception as e:
-            print("An error occured:", e)
-        return None
-
     def edit_settings(self): # edit setting menu
         while True:
             print()
             print("SETTINGS MENU")
-            print("[0] Set Twitter Token")
             print("[Any] Back")
             s = input()
             match s:
-                case "0":
-                    t = input("Please copy and paste your token (Leave blank to cancel):")
-                    if t != "":
-                        self.settings["twitter"] = t
-                        if self.test_twitter():
-                            self.save()
                 case _:
                     break
 
@@ -215,7 +171,6 @@ class GBFTM():
             print("[0] Download Item")
             print("[1] Download Pride of Ascendant")
             print("[2] Download from URL")
-            print("[3] Download from Twitter")
             print("[Any] Back")
             s = input()
             match s:
@@ -245,9 +200,6 @@ class GBFTM():
                     if not u.startswith("http") and not u.endswith(".png") and not u.endswith(".jpg"):
                         print("Invalid URL")
                         continue
-                case "3":
-                    self.retrieve_raid_image(input("Input a Tweetdeck code:"))
-                    continue
                 case _:
                     break
             try:
@@ -848,15 +800,7 @@ class GBFTM():
     def make_background(self, img, query, rtype=None): # menu to add a background
         res = self.search_asset(query)
         if len(res) == 0:
-            print("No results found")
-            if self.client is not None or self.test_twitter(silent=True):
-                print("Searching on Twitter...")
-                b = self.retrieve_raid_image(query)
-                if b is None:
-                    print("No images found")
-                    raise Exception("No valid background found")
-            else:
-                raise Exception("No valid background found")
+            raise Exception("No valid background found")
         elif len(res) == 1 or self.path != "":
             b = res[0]
         else:
