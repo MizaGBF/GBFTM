@@ -1,6 +1,6 @@
 import tweepy
 from urllib import request
-from urllib.parse import quote
+from urllib.parse import quote, quote_plus
 import os
 from PIL import Image, ImageFont, ImageDraw
 import pyperclip
@@ -13,12 +13,10 @@ import sys
 
 class GBFTM():
     def __init__(self, path=""):
-        self.version = [1, 24]
+        self.version = [1, 25]
         print("GBF Thumbnail Maker v{}.{}".format(self.version[0], self.version[1]))
         self.path = path
         self.assets = []
-        self.settings = {}
-        self.load()
         self.list_assets()
         self.cache = {}
         self.classes = { # class prefix (gotta add them manually, sadly)
@@ -111,39 +109,77 @@ class GBFTM():
         self.possible_pos = ["topleft", "left", "bottomleft", "bottom", "bottomright", "right", "topright", "top", "middle"]
         self.possible_display = ["squareicon", "partyicon", "fullart", "homeart", "skycompass"]
 
+    def retrieve_raid_image(self, search): # retrieve and save a raid image from its tweetdeck code
+        try:
+            cnt = self.request("https://nitter.net/search?f=tweets&q={}".format(quote_plus(search)))
+            if cnt is not None:
+                cnt = cnt.decode('utf-8')
+                c = 0
+                s = set()
+                while True:
+                    a = cnt.find('<img src="/pic/media', c)
+                    if a == -1: break
+                    a += len('<img src="/pic/media')
+                    b = cnt.find('.jpg', a)
+                    c = b
+                    s.add(cnt[a:b+len('.jpg')])
+                s = list(s)
+                if len(s) > 0:
+                    if len(s) > 1:
+                        print(len(s), "images found, which one do you want? (Add 'c' before the number to copy the url)")
+                        for i, a in enumerate(s):
+                            print('[{}] https://nitter.net/pic/media{}'.format(i, a))
+                        while True:
+                            b = input()
+                            if b.startswith('c'):
+                                try:
+                                    pyperclip.copy('https://nitter.net/pic/media'+s[int(b[1:])])
+                                    print("Copied choice", b[1:])
+                                except:
+                                    print("Not a valid choice")
+                            elif b == "":
+                                print("Cancelled...")
+                                return None
+                            else:
+                                try:
+                                    s = s[int(b)]
+                                    print("Select choice", b)
+                                    break
+                                except:
+                                    print("Not a valid choice")
+                    else:
+                        s = s[0]
+                        print("Image found")
+                    print("Downloading...")
+                    b = self.request('https://nitter.net/pic/media'+s)
+                    if b is not None:
+                        self.checkAssetFolder()
+                        with open(self.path + "assets/" + search.lower() + ".jpg", "wb") as f:
+                            f.write(b)
+                        print("Image saved as assets/" + search.lower() + ".jpg")
+                        self.list_assets()
+                        return search.lower() + ".jpg"
+                    else:
+                        print("Failed to download 'https://nitter.net/pic/media"+s)
+            print("No images found")
+        except Exception as e:
+            print("An error occured:", e)
+        return None
+
     def list_assets(self): # list all .png or .jpg files in the /assets folder
         try: self.assets = [f for f in os.listdir(self.path + "assets") if (os.path.isfile(os.path.join(self.path + "assets", f)) and (f.endswith('.png') or f.endswith('.jpg')))]
         except: self.assets = []
         print(len(self.assets), "asset(s) found")
 
-    def load(self): # load settings.json
-        try:
-            with open(self.path + 'settings.json') as f:
-                self.settings = json.load(f)
-        except:
-            print("Failed to load settings.json")
-            while True:
-                print("An empty settings.json file will be created, continue? (y/n)")
-                i = input()
-                if i.lower() == 'n': exit(0)
-                elif i.lower() == 'y': break
-                self.save()
-
-    def save(self): # save settings.json
-        try:
-            with open(self.path + 'settings.json', 'w') as outfile:
-                json.dump(self.settings, outfile)
-        except:
-            pass
-
     def request(self, url): # do a HTTP request and return the result
         try:
-            req = request.Request(url)
+            req = request.Request(url, headers={'user-agent':'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36'})
             url_handle = request.urlopen(req)
             data = url_handle.read()
             url_handle.close()
             return data
-        except:
+        except Exception as e:
+            print(e)
             return None
 
     def checkDiskCache(self): # check if cache folder exists (and create it if needed)
@@ -154,16 +190,6 @@ class GBFTM():
         if not os.path.isdir(self.path + 'assets'):
             os.mkdir(self.path + 'assets')
 
-    def edit_settings(self): # edit setting menu
-        while True:
-            print()
-            print("SETTINGS MENU")
-            print("[Any] Back")
-            s = input()
-            match s:
-                case _:
-                    break
-
     def add_asset(self): # to download and save files into the assets folder
         while True:
             print()
@@ -171,6 +197,7 @@ class GBFTM():
             print("[0] Download Item")
             print("[1] Download Pride of Ascendant")
             print("[2] Download from URL")
+            print("[3] Download from Nitter")
             print("[Any] Back")
             s = input()
             match s:
@@ -200,6 +227,9 @@ class GBFTM():
                     if not u.startswith("http") and not u.endswith(".png") and not u.endswith(".jpg"):
                         print("Invalid URL")
                         continue
+                case "3":
+                    self.retrieve_raid_image(input("Input a Tweetdeck code:"))
+                    continue
                 case _:
                     break
             try:
@@ -218,7 +248,6 @@ class GBFTM():
             print("MAIN MENU")
             print("[0] Make Image")
             print("[1] Add Asset")
-            print("[2] Settings")
             print("[Any] Quit")
             s = input()
             match s:
@@ -226,8 +255,6 @@ class GBFTM():
                     self.make()
                 case "1":
                     self.add_asset()
-                case "2":
-                    self.edit_settings()
                 case _:
                     break
 
@@ -800,7 +827,11 @@ class GBFTM():
     def make_background(self, img, query, rtype=None): # menu to add a background
         res = self.search_asset(query)
         if len(res) == 0:
-            raise Exception("No valid background found")
+            print("No results found")
+            b = self.retrieve_raid_image(query)
+            if b is None:
+                print("No images found")
+                raise Exception("No valid background found")
         elif len(res) == 1 or self.path != "":
             b = res[0]
         else:
