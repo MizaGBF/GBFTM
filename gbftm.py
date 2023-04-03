@@ -13,7 +13,7 @@ import sys
 
 class GBFTM():
     def __init__(self, path=""):
-        self.version = [1, 25]
+        self.version = [1, 26]
         print("GBF Thumbnail Maker v{}.{}".format(self.version[0], self.version[1]))
         self.path = path
         self.assets = []
@@ -120,9 +120,10 @@ class GBFTM():
                     a = cnt.find('<img src="/pic/media', c)
                     if a == -1: break
                     a += len('<img src="/pic/media')
-                    b = cnt.find('.jpg', a)
-                    c = b
-                    s.add(cnt[a:b+len('.jpg')])
+                    b1 = cnt.find('.jpg', a)
+                    b2 = cnt.find('.png', a)
+                    c = min(b1, b2)
+                    s.add(cnt[a:c+len('.jpg')])
                 s = list(s)
                 if len(s) > 0:
                     if len(s) > 1:
