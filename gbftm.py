@@ -1,4 +1,3 @@
-import tweepy
 from urllib import request
 from urllib.parse import quote, quote_plus
 import os
